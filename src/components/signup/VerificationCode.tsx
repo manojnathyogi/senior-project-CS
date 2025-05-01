@@ -7,6 +7,7 @@ import {
   InputOTPGroup, 
   InputOTPSlot 
 } from "@/components/ui/input-otp";
+import { useNavigate } from "react-router-dom";
 
 interface VerificationCodeProps {
   email: string;
@@ -17,6 +18,7 @@ interface VerificationCodeProps {
 const VerificationCode = ({ email, onVerify, onResend }: VerificationCodeProps) => {
   const [verificationCode, setVerificationCode] = useState("");
   const [timeLeft, setTimeLeft] = useState(60);
+  const navigate = useNavigate();
   
   useEffect(() => {
     if (timeLeft > 0) {
@@ -32,6 +34,8 @@ const VerificationCode = ({ email, onVerify, onResend }: VerificationCodeProps) 
     if (verificationCode === "123456") {
       toast.success("Email verified successfully!");
       onVerify();
+      // Redirect to landing page after verification
+      navigate('/');
     } else {
       toast.error("Invalid verification code, please try again");
     }

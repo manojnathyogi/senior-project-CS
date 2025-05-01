@@ -8,15 +8,25 @@ import { Switch } from "@/components/ui/switch";
 import { Bell, Sun, Moon, Settings, Shield, HelpCircle, LogOut } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { useTheme } from "@/hooks/useTheme";
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 const Profile = () => {
-  const [darkMode, setDarkMode] = useState(false);
+  const navigate = useNavigate();
+  const { theme, setTheme } = useTheme();
   const [notifications, setNotifications] = useState({
     dailyReminders: true,
     weeklyReports: true,
     peerMessages: true,
     tips: false
   });
+
+  const handleLogout = () => {
+    localStorage.removeItem("mindease_user");
+    toast.success("Logged out successfully");
+    navigate("/login");
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col pb-16">
@@ -25,7 +35,11 @@ const Profile = () => {
       <main className="flex-1 px-4 py-6 space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">Profile</h1>
-          <Button variant="ghost" size="icon">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => navigate("/settings")}
+          >
             <Settings className="h-5 w-5" />
           </Button>
         </div>
@@ -104,12 +118,19 @@ const Profile = () => {
           <CardContent className="space-y-4">
             <div className="flex justify-between items-center">
               <div className="space-y-0.5 flex items-center">
-                <Sun className="h-5 w-5 mr-2" />
+                {theme === "dark" ? (
+                  <Moon className="h-5 w-5 mr-2" />
+                ) : (
+                  <Sun className="h-5 w-5 mr-2" />
+                )}
                 <Label className="text-base">Dark Mode</Label>
               </div>
               <Switch 
-                checked={darkMode}
-                onCheckedChange={setDarkMode}
+                checked={theme === "dark"}
+                onCheckedChange={(checked) => {
+                  setTheme(checked ? "dark" : "light");
+                  toast.success(`${checked ? "Dark" : "Light"} mode activated`);
+                }}
               />
             </div>
           </CardContent>
@@ -124,7 +145,12 @@ const Profile = () => {
             <HelpCircle className="mr-2 h-5 w-5" />
             Help & Support
           </Button>
-          <Button variant="outline" className="w-full justify-start text-red-500" size="lg">
+          <Button 
+            variant="outline" 
+            className="w-full justify-start text-red-500" 
+            size="lg"
+            onClick={handleLogout}
+          >
             <LogOut className="mr-2 h-5 w-5" />
             Sign Out
           </Button>

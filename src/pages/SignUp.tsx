@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
+import VerificationCode from "@/components/signup/VerificationCode";
 
 const universities = [
   { name: "Howard University", domain: "howard.edu" },
@@ -19,6 +20,8 @@ const universities = [
 
 const SignUp = () => {
   const navigate = useNavigate();
+  const [step, setStep] = useState(1); // 1: Form, 2: Verification
+  
   const [formData, setFormData] = useState({
     fullName: "",
     username: "",
@@ -99,7 +102,14 @@ const SignUp = () => {
       return;
     }
 
-    // For demo purposes, we'll just simulate a successful signup
+    // Send verification code to email (in a real app)
+    // Here we just move to the verification step
+    toast.info(`Verification code sent to ${formData.email}`);
+    setStep(2);
+  };
+  
+  const handleVerificationComplete = () => {
+    // Create account after verification is complete
     toast.success("Account created successfully!");
     
     // Store the new user in localStorage (in a real app, this would be handled by a backend)
@@ -113,6 +123,113 @@ const SignUp = () => {
     
     navigate("/");
   };
+  
+  const handleResendCode = () => {
+    // In a real app, this would resend the code
+    console.log("Resending code to", formData.email);
+  };
+
+  const renderForm = () => (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="fullName">Full Name</Label>
+        <Input
+          id="fullName"
+          name="fullName"
+          placeholder="John Doe"
+          value={formData.fullName}
+          onChange={handleChange}
+        />
+        {errors.fullName && (
+          <p className="text-xs text-destructive">{errors.fullName}</p>
+        )}
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="username">Username</Label>
+        <Input
+          id="username"
+          name="username"
+          placeholder="johndoe123"
+          value={formData.username}
+          onChange={handleChange}
+        />
+        {errors.username && (
+          <p className="text-xs text-destructive">{errors.username}</p>
+        )}
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="university">Select your university</Label>
+        <Select
+          defaultValue="Howard University"
+          onValueChange={handleUniversityChange}
+        >
+          <SelectTrigger id="university">
+            <SelectValue placeholder="Select university" />
+          </SelectTrigger>
+          <SelectContent>
+            {universities.map((uni) => (
+              <SelectItem key={uni.domain} value={uni.name}>
+                {uni.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="email">Email</Label>
+        <Input
+          id="email"
+          name="email"
+          type="email"
+          placeholder={`student@${
+            universities.find((uni) => uni.name === formData.university)?.domain
+          }`}
+          value={formData.email}
+          onChange={handleChange}
+        />
+        {errors.email && (
+          <p className="text-xs text-destructive">{errors.email}</p>
+        )}
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="password">Password</Label>
+        <Input
+          id="password"
+          name="password"
+          type="password"
+          value={formData.password}
+          onChange={handleChange}
+        />
+        {errors.password && (
+          <p className="text-xs text-destructive">{errors.password}</p>
+        )}
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="confirmPassword">Confirm Password</Label>
+        <Input
+          id="confirmPassword"
+          name="confirmPassword"
+          type="password"
+          value={formData.confirmPassword}
+          onChange={handleChange}
+        />
+        {errors.confirmPassword && (
+          <p className="text-xs text-destructive">
+            {errors.confirmPassword}
+          </p>
+        )}
+      </div>
+      
+      <Button type="submit" className="w-full mt-6">
+        Create Account
+      </Button>
+    </form>
+  );
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-mindSoftPurple to-mindSoftBlue p-4">
@@ -132,116 +249,28 @@ const SignUp = () => {
                 variant="ghost" 
                 size="icon" 
                 className="rounded-full mr-2"
-                onClick={() => navigate("/login")}
+                onClick={() => step === 1 ? navigate("/login") : setStep(1)}
               >
                 <ArrowLeft size={18} />
               </Button>
-              <CardTitle>Create an Account</CardTitle>
+              <CardTitle>{step === 1 ? "Create an Account" : "Verify Email"}</CardTitle>
             </div>
             <CardDescription>
-              Join MindEase to start your wellness journey
+              {step === 1 
+                ? "Join MindEase to start your wellness journey" 
+                : "Enter the verification code sent to your email"}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name</Label>
-                <Input
-                  id="fullName"
-                  name="fullName"
-                  placeholder="John Doe"
-                  value={formData.fullName}
-                  onChange={handleChange}
-                />
-                {errors.fullName && (
-                  <p className="text-xs text-destructive">{errors.fullName}</p>
-                )}
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
-                <Input
-                  id="username"
-                  name="username"
-                  placeholder="johndoe123"
-                  value={formData.username}
-                  onChange={handleChange}
-                />
-                {errors.username && (
-                  <p className="text-xs text-destructive">{errors.username}</p>
-                )}
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="university">Select your university</Label>
-                <Select
-                  defaultValue="Howard University"
-                  onValueChange={handleUniversityChange}
-                >
-                  <SelectTrigger id="university">
-                    <SelectValue placeholder="Select university" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {universities.map((uni) => (
-                      <SelectItem key={uni.domain} value={uni.name}>
-                        {uni.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder={`student@${
-                    universities.find((uni) => uni.name === formData.university)?.domain
-                  }`}
-                  value={formData.email}
-                  onChange={handleChange}
-                />
-                {errors.email && (
-                  <p className="text-xs text-destructive">{errors.email}</p>
-                )}
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                />
-                {errors.password && (
-                  <p className="text-xs text-destructive">{errors.password}</p>
-                )}
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
-                <Input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type="password"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                />
-                {errors.confirmPassword && (
-                  <p className="text-xs text-destructive">
-                    {errors.confirmPassword}
-                  </p>
-                )}
-              </div>
-              
-              <Button type="submit" className="w-full mt-6">
-                Create Account
-              </Button>
-            </form>
+            {step === 1 ? (
+              renderForm()
+            ) : (
+              <VerificationCode 
+                email={formData.email}
+                onVerify={handleVerificationComplete}
+                onResend={handleResendCode}
+              />
+            )}
           </CardContent>
           <CardFooter className="flex justify-center">
             <p className="text-sm text-muted-foreground">

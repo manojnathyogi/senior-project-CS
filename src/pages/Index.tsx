@@ -6,6 +6,7 @@ import DailyTip from "@/components/DailyTip";
 import RecommendedActivities from "@/components/RecommendedActivities";
 import WellnessCard from "@/components/WellnessCard";
 import CrisisButton from "@/components/CrisisButton";
+import EngagementTracker from "@/components/EngagementTracker";
 import { Calendar, Heart, MessageSquare } from "lucide-react";
 
 const Index = () => {
@@ -45,6 +46,8 @@ const Index = () => {
         </div>
         
         <MoodTracker />
+        
+        <EngagementTracker />
         
         <RecommendedActivities />
         

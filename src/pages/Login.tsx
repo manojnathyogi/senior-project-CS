@@ -6,13 +6,23 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+
+const universities = [
+  { name: "Howard University", domain: "howard.edu" },
+  { name: "Georgetown University", domain: "georgetown.edu" },
+  { name: "University of Maryland", domain: "umd.edu" },
+  { name: "George Washington University", domain: "gwu.edu" },
+  { name: "American University", domain: "american.edu" },
+];
 
 const Login = () => {
   const navigate = useNavigate();
   const [loginType, setLoginType] = useState<"student" | "admin">("student");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [selectedUniversity, setSelectedUniversity] = useState<string | null>(null);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,9 +32,17 @@ const Login = () => {
       return;
     }
     
-    if (loginType === "student" && !email.endsWith(".edu")) {
-      toast.error("Please use your university email (.edu)");
-      return;
+    if (loginType === "student") {
+      if (!selectedUniversity) {
+        toast.error("Please select your university");
+        return;
+      }
+      
+      const universityDomain = universities.find(u => u.name === selectedUniversity)?.domain;
+      if (!email.endsWith(`.${universityDomain}`)) {
+        toast.error(`Please use your ${selectedUniversity} email address`);
+        return;
+      }
     }
     
     toast.success(`${loginType === "student" ? "Student" : "Admin"} login successful`);
@@ -58,12 +76,35 @@ const Login = () => {
               
               <form onSubmit={handleLogin}>
                 <div className="space-y-4 mt-4">
+                  {loginType === "student" && (
+                    <div className="space-y-2">
+                      <Label htmlFor="university">Select your university</Label>
+                      <Select onValueChange={setSelectedUniversity}>
+                        <SelectTrigger id="university">
+                          <SelectValue placeholder="Select university" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {universities.map((uni) => (
+                            <SelectItem key={uni.domain} value={uni.name}>
+                              {uni.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
                     <Input 
                       id="email" 
                       type="email" 
-                      placeholder={loginType === "student" ? "your.name@university.edu" : "admin@mindease.com"}
+                      placeholder={loginType === "student" ? 
+                        (selectedUniversity ? 
+                          `your.name@${universities.find(u => u.name === selectedUniversity)?.domain}` : 
+                          "your.name@university.edu") : 
+                        "admin@mindease.com"
+                      }
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required

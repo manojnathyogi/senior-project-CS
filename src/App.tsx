@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Wellness from "./pages/Wellness";
 import Peers from "./pages/Peers";
 import Profile from "./pages/Profile";
+import LowFidelity from "./pages/LowFidelity";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/wellness" element={<Wellness />} />
           <Route path="/peers" element={<Peers />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/low-fidelity" element={<LowFidelity />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

@@ -1,5 +1,5 @@
 
-import { Home, Heart, MessageSquare, User } from "lucide-react";
+import { Home, Heart, Calendar, MessageSquare, User } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
 const Navigation = () => {
@@ -8,6 +8,7 @@ const Navigation = () => {
 
   const navItems = [
     { icon: Home, label: "Home", path: "/" },
+    { icon: Calendar, label: "Campus", path: "/campus" },
     { icon: Heart, label: "Wellness", path: "/wellness" },
     { icon: MessageSquare, label: "Peers", path: "/peers" },
     { icon: User, label: "Profile", path: "/profile" },

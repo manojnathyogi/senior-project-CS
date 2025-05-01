@@ -7,9 +7,8 @@ import RecommendedActivities from "@/components/RecommendedActivities";
 import WellnessCard from "@/components/WellnessCard";
 import CrisisButton from "@/components/CrisisButton";
 import EngagementTracker from "@/components/EngagementTracker";
-import { Calendar, Heart, MessageSquare, LayoutGrid } from "lucide-react";
-import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import CBTExercises from "@/components/CBTExercises";
+import { Heart, Calendar, MessageSquare } from "lucide-react";
 
 const Index = () => {
   return (
@@ -19,12 +18,6 @@ const Index = () => {
       <main className="flex-1 px-4 py-6 space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">Welcome back, Sam</h1>
-          <Button variant="outline" size="sm" asChild>
-            <Link to="/low-fidelity">
-              <LayoutGrid size={16} className="mr-2" />
-              View Mockups
-            </Link>
-          </Button>
         </div>
         
         <DailyTip tip="Take a moment to breathe deeply when you feel overwhelmed. A few mindful breaths can help restore your sense of calm and focus." />
@@ -56,6 +49,8 @@ const Index = () => {
         </div>
         
         <MoodTracker />
+        
+        <CBTExercises />
         
         <EngagementTracker />
         

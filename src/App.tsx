@@ -7,9 +7,10 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Index from "./pages/Index";
 import Wellness from "./pages/Wellness";
+import Campus from "./pages/Campus";
 import Peers from "./pages/Peers";
 import Profile from "./pages/Profile";
-import LowFidelity from "./pages/LowFidelity";
+import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,10 +23,11 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/campus" element={<Campus />} />
           <Route path="/wellness" element={<Wellness />} />
           <Route path="/peers" element={<Peers />} />
           <Route path="/profile" element={<Profile />} />
-          <Route path="/low-fidelity" element={<LowFidelity />} />
+          <Route path="/login" element={<Login />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import MoodTracker from "@/components/MoodTracker";
 
 const Wellness = () => {
+  // Set to true by default to ensure it displays for testing
   const [isChatRecommended, setIsChatRecommended] = useState(true);
   
   return (
@@ -33,7 +34,7 @@ const Wellness = () => {
           <TabsContent value="mood" className="space-y-6 pt-4">
             <MoodTracker />
             
-            {/* Counselor Chat component appears here if recommended */}
+            {/* Always show the counselor chat component for now */}
             <CounselorChat isRecommended={isChatRecommended} />
           </TabsContent>
           

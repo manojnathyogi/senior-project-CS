@@ -1,6 +1,6 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Book, Meditation, HeartPulse, Smile } from "lucide-react";
+import { Book, Heart, HeartPulse, Smile } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -17,7 +17,7 @@ const activities: Activity[] = [
     id: "1",
     title: "5-Minute Breathing",
     description: "Quick breathing exercise to reduce stress",
-    icon: Meditation,
+    icon: Heart,
     iconClassName: "text-mindPurple",
   },
   {

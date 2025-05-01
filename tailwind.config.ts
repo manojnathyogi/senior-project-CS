@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -52,16 +53,17 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
-				sidebar: {
-					DEFAULT: 'hsl(var(--sidebar-background))',
-					foreground: 'hsl(var(--sidebar-foreground))',
-					primary: 'hsl(var(--sidebar-primary))',
-					'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
-					accent: 'hsl(var(--sidebar-accent))',
-					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
-					border: 'hsl(var(--sidebar-border))',
-					ring: 'hsl(var(--sidebar-ring))'
-				}
+				// MindEase Colors
+				mindPurple: "#9b87f5",
+				mindBlue: "#7E8BF7",
+				mindGreen: "#6FCF97",
+				mindOrange: "#F2994A",
+				mindRed: "#EB5757",
+				mindYellow: "#F2C94C",
+				mindSoftBlue: "#D3E4FD",
+				mindSoftGreen: "#F2FCE2",
+				mindSoftOrange: "#FEC6A1",
+				mindSoftPurple: "#E5DEFF",
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -84,11 +86,22 @@ export default {
 					to: {
 						height: '0'
 					}
-				}
+				},
+				'pulse-soft': {
+					'0%, 100%': { 
+						opacity: 1,
+						transform: 'scale(1)' 
+					},
+					'50%': { 
+						opacity: 0.8,
+						transform: 'scale(1.05)' 
+					},
+				},
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'pulse-soft': 'pulse-soft 3s infinite ease-in-out',
 			}
 		}
 	},

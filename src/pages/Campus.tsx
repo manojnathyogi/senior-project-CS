@@ -6,14 +6,46 @@ import CampusEvents from "@/components/CampusEvents";
 import { Card, CardContent } from "@/components/ui/card";
 import { Calendar } from "lucide-react";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 const Campus = () => {
   const [showHealthCenter, setShowHealthCenter] = useState(false);
+  const [newEvent, setNewEvent] = useState({
+    title: "",
+    description: "",
+    date: "",
+    time: "",
+    location: "",
+  });
   
   const handleHealthCenterSchedule = () => {
     setShowHealthCenter(!showHealthCenter);
     toast.success("Appointment Request Sent", {
       description: "Howard University Health Center will contact you shortly to confirm your appointment.",
+    });
+  };
+  
+  const handleCreateEvent = () => {
+    if (!newEvent.title || !newEvent.date || !newEvent.location) {
+      toast.error("Please fill out all required fields");
+      return;
+    }
+    
+    toast.success("Event Created", {
+      description: "Your event has been added to the campus calendar."
+    });
+    
+    // Reset form
+    setNewEvent({
+      title: "",
+      description: "",
+      date: "",
+      time: "",
+      location: "",
     });
   };
   
@@ -55,7 +87,80 @@ const Campus = () => {
           </Card>
         </div>
         
-        <CampusEvents />
+        {/* Campus Events with Create Event Feature */}
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-medium">Campus Mental Health Events</h3>
+            
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline">Create Event</Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Create New Campus Event</DialogTitle>
+                  <DialogDescription>
+                    Add a new mental health event to the campus calendar. Fill in all required fields.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="title">Event Title*</Label>
+                    <Input 
+                      id="title" 
+                      value={newEvent.title}
+                      onChange={(e) => setNewEvent({...newEvent, title: e.target.value})}
+                      placeholder="e.g., Stress Management Workshop"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="description">Description</Label>
+                    <Textarea 
+                      id="description"
+                      value={newEvent.description}
+                      onChange={(e) => setNewEvent({...newEvent, description: e.target.value})}
+                      placeholder="Brief description of the event"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="grid gap-2">
+                      <Label htmlFor="date">Date*</Label>
+                      <Input 
+                        id="date" 
+                        type="date"
+                        value={newEvent.date}
+                        onChange={(e) => setNewEvent({...newEvent, date: e.target.value})}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="time">Time</Label>
+                      <Input 
+                        id="time" 
+                        type="time"
+                        value={newEvent.time}
+                        onChange={(e) => setNewEvent({...newEvent, time: e.target.value})}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="location">Location*</Label>
+                    <Input 
+                      id="location"
+                      value={newEvent.location}
+                      onChange={(e) => setNewEvent({...newEvent, location: e.target.value})}
+                      placeholder="e.g., Student Center, Room 203"
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button onClick={handleCreateEvent}>Create Event</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+          
+          <CampusEvents />
+        </div>
       </main>
       
       <Navigation />

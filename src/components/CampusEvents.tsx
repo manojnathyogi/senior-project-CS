@@ -93,55 +93,48 @@ const CampusEvents = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium">Upcoming Events</h3>
-        <Button variant="outline" size="sm">View All</Button>
-      </div>
-
-      <div className="space-y-4">
-        {events.map((event) => (
-          <Card key={event.id} className="overflow-hidden">
-            <CardHeader className="pb-2">
-              <div className="flex justify-between items-start">
-                <div>
-                  <Badge className={`mb-2 ${getCategoryColor(event.category)}`}>{event.category}</Badge>
-                  <CardTitle className="text-lg">{event.title}</CardTitle>
-                </div>
+      {events.map((event) => (
+        <Card key={event.id} className="overflow-hidden">
+          <CardHeader className="pb-2">
+            <div className="flex justify-between items-start">
+              <div>
+                <Badge className={`mb-2 ${getCategoryColor(event.category)}`}>{event.category}</Badge>
+                <CardTitle className="text-lg">{event.title}</CardTitle>
               </div>
-            </CardHeader>
-            <CardContent className="pb-2">
-              <CardDescription className="mb-4">{event.description}</CardDescription>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div className="flex items-center gap-2">
-                  <Calendar size={14} className="text-gray-500" />
-                  <span>{event.date}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Clock size={14} className="text-gray-500" />
-                  <span>{event.time}</span>
-                </div>
-                <div className="flex items-center gap-2 col-span-2">
-                  <MapPin size={14} className="text-gray-500" />
-                  <span>{event.location}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Users size={14} className="text-gray-500" />
-                  <span>{event.attendees} attending</span>
-                </div>
+            </div>
+          </CardHeader>
+          <CardContent className="pb-2">
+            <CardDescription className="mb-4">{event.description}</CardDescription>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div className="flex items-center gap-2">
+                <Calendar size={14} className="text-gray-500" />
+                <span>{event.date}</span>
               </div>
-            </CardContent>
-            <CardFooter>
-              <Button 
-                variant={event.registered ? "outline" : "default"} 
-                className="w-full" 
-                onClick={() => handleRegistration(event.id)}
-              >
-                {event.registered ? "Cancel Registration" : "Register"}
-              </Button>
-            </CardFooter>
-          </Card>
-        ))}
-      </div>
+              <div className="flex items-center gap-2">
+                <Clock size={14} className="text-gray-500" />
+                <span>{event.time}</span>
+              </div>
+              <div className="flex items-center gap-2 col-span-2">
+                <MapPin size={14} className="text-gray-500" />
+                <span>{event.location}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Users size={14} className="text-gray-500" />
+                <span>{event.attendees} attending</span>
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button 
+              variant={event.registered ? "outline" : "default"} 
+              className="w-full" 
+              onClick={() => handleRegistration(event.id)}
+            >
+              {event.registered ? "Cancel Registration" : "Register"}
+            </Button>
+          </CardFooter>
+        </Card>
+      ))}
     </div>
   );
 };

@@ -7,6 +7,14 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle 
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 
 const universities = [
@@ -34,6 +42,8 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [selectedUniversity, setSelectedUniversity] = useState<string | null>("Howard University"); // Default to Howard
+  const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,7 +71,8 @@ const Login = () => {
           type: "student",
           name: "Sam Johnson",
           university: selectedUniversity,
-          email: email
+          email: email,
+          username: "samjohnson"
         }));
         toast.success("Student login successful");
         navigate("/");
@@ -74,7 +85,8 @@ const Login = () => {
         localStorage.setItem("mindease_user", JSON.stringify({
           type: "admin",
           name: "Admin User",
-          email: email
+          email: email,
+          username: "adminuser"
         }));
         toast.success("Admin login successful");
         navigate("/");
@@ -82,6 +94,20 @@ const Login = () => {
         toast.error("Invalid admin credentials. Try using: admin@mindease.com / admin123");
       }
     }
+  };
+  
+  const handleForgotPassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!resetEmail) {
+      toast.error("Please enter your email address");
+      return;
+    }
+    
+    // Simulate sending a password reset email
+    toast.success(`Password reset link sent to ${resetEmail}`);
+    setForgotPasswordOpen(false);
+    setResetEmail("");
   };
 
   return (
@@ -152,9 +178,14 @@ const Login = () => {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="password">Password</Label>
-                      <a href="#" className="text-xs text-primary hover:underline">
+                      <Button 
+                        type="button" 
+                        variant="link" 
+                        className="p-0 h-auto text-xs"
+                        onClick={() => setForgotPasswordOpen(true)}
+                      >
                         Forgot password?
-                      </a>
+                      </Button>
                     </div>
                     <Input 
                       id="password" 
@@ -181,9 +212,13 @@ const Login = () => {
           <CardFooter className="flex-col space-y-2">
             <div className="text-center text-sm text-gray-500">
               Don't have an account?{" "}
-              <a href="#" className="text-primary hover:underline">
+              <Button 
+                variant="link" 
+                className="p-0 h-auto"
+                onClick={() => navigate("/signup")}
+              >
                 Sign up
-              </a>
+              </Button>
             </div>
             
             {loginType === "student" && (
@@ -194,6 +229,36 @@ const Login = () => {
           </CardFooter>
         </Card>
       </div>
+
+      {/* Forgot Password Dialog */}
+      <Dialog open={forgotPasswordOpen} onOpenChange={setForgotPasswordOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Reset your password</DialogTitle>
+            <DialogDescription>
+              Enter your email address and we'll send you a link to reset your password.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleForgotPassword}>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="reset-email">Email</Label>
+                <Input
+                  id="reset-email"
+                  type="email"
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  placeholder="name@example.com"
+                  required
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="submit">Send reset link</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

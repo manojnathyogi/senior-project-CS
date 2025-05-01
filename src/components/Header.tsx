@@ -33,6 +33,10 @@ const Header = () => {
   const goToAdminDashboard = () => {
     navigate("/admin");
   };
+
+  const goToSettings = () => {
+    navigate("/settings");
+  };
   
   return (
     <header className="p-4 flex justify-between items-center">
@@ -86,7 +90,12 @@ const Header = () => {
         >
           <Phone size={18} />
         </Button>
-        <Button variant="ghost" size="icon" className="rounded-full">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="rounded-full"
+          onClick={goToSettings}
+        >
           <Settings size={20} />
         </Button>
         <Button variant="ghost" size="icon" className="rounded-full">

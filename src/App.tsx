@@ -17,17 +17,19 @@ import SignUp from "./pages/SignUp";
 import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/AdminDashboard";
 import Settings from "./pages/Settings";
+import CounselorLogin from "./pages/CounselorLogin";
+import CounselorDashboard from "./pages/CounselorDashboard";
 
 const queryClient = new QueryClient();
 
 const App = () => {
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [userType, setUserType] = useState<"student" | "admin" | "counselor" | null>(null);
   
   useEffect(() => {
     const storedUser = localStorage.getItem("mindease_user");
     if (storedUser) {
       const user = JSON.parse(storedUser);
-      setIsAdmin(user.type === "admin");
+      setUserType(user.type);
     }
   }, []);
   
@@ -39,7 +41,11 @@ const App = () => {
           <Sonner />
           <BrowserRouter>
             <Routes>
-              <Route path="/" element={isAdmin ? <Navigate to="/admin" replace /> : <Index />} />
+              <Route path="/" element={
+                userType === "admin" ? <Navigate to="/admin" replace /> : 
+                userType === "counselor" ? <Navigate to="/counselor-dashboard" replace /> :
+                <Index />
+              } />
               <Route path="/campus" element={<Campus />} />
               <Route path="/wellness" element={<Wellness />} />
               <Route path="/peers" element={<Peers />} />
@@ -48,6 +54,8 @@ const App = () => {
               <Route path="/signup" element={<SignUp />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/counselor-login" element={<CounselorLogin />} />
+              <Route path="/counselor-dashboard" element={<CounselorDashboard />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

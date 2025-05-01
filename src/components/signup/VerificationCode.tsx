@@ -8,6 +8,7 @@ import {
   InputOTPSlot 
 } from "@/components/ui/input-otp";
 import { useNavigate } from "react-router-dom";
+import { Mail, Check } from "lucide-react";
 
 interface VerificationCodeProps {
   email: string;
@@ -20,6 +21,9 @@ const VerificationCode = ({ email, onVerify, onResend }: VerificationCodeProps) 
   const [timeLeft, setTimeLeft] = useState(60);
   const navigate = useNavigate();
   
+  // Example verification code
+  const exampleCode = "123456";
+  
   useEffect(() => {
     if (timeLeft > 0) {
       const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
@@ -30,8 +34,8 @@ const VerificationCode = ({ email, onVerify, onResend }: VerificationCodeProps) 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // For demo purposes, we'll use a hardcoded verification code
-    if (verificationCode === "123456") {
+    // Check against the example code
+    if (verificationCode === exampleCode) {
       toast.success("Email verified successfully!");
       onVerify();
       // Redirect to landing page after verification
@@ -47,6 +51,10 @@ const VerificationCode = ({ email, onVerify, onResend }: VerificationCodeProps) 
     onResend();
   };
 
+  const fillExampleCode = () => {
+    setVerificationCode(exampleCode);
+  };
+
   return (
     <div className="flex flex-col items-center">
       <h2 className="text-xl font-semibold mb-2">Verify your email</h2>
@@ -54,6 +62,27 @@ const VerificationCode = ({ email, onVerify, onResend }: VerificationCodeProps) 
         We've sent a 6-digit verification code to<br />
         <span className="font-medium">{email}</span>
       </p>
+
+      <div className="bg-muted p-4 rounded-lg mb-6 w-full max-w-xs">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Mail size={18} />
+            <span className="font-medium">Example Code:</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <code className="bg-background px-2 py-1 rounded font-mono">{exampleCode}</code>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={fillExampleCode} 
+              className="h-8 px-2"
+              title="Fill code automatically"
+            >
+              <Check size={16} />
+            </Button>
+          </div>
+        </div>
+      </div>
 
       <form onSubmit={handleSubmit} className="w-full space-y-6">
         <div className="flex flex-col items-center space-y-4">

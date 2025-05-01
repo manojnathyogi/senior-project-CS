@@ -17,12 +17,23 @@ const universities = [
   { name: "American University", domain: "american.edu" },
 ];
 
+// Demo credentials
+const demoStudentCredentials = {
+  email: "student@howard.edu",
+  password: "password123"
+};
+
+const demoAdminCredentials = {
+  email: "admin@mindease.com",
+  password: "admin123"
+};
+
 const Login = () => {
   const navigate = useNavigate();
   const [loginType, setLoginType] = useState<"student" | "admin">("student");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [selectedUniversity, setSelectedUniversity] = useState<string | null>(null);
+  const [selectedUniversity, setSelectedUniversity] = useState<string | null>("Howard University"); // Default to Howard
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,6 +43,7 @@ const Login = () => {
       return;
     }
     
+    // Demo authentication logic
     if (loginType === "student") {
       if (!selectedUniversity) {
         toast.error("Please select your university");
@@ -39,14 +51,37 @@ const Login = () => {
       }
       
       const universityDomain = universities.find(u => u.name === selectedUniversity)?.domain;
-      if (!email.endsWith(`.${universityDomain}`)) {
+      if (!email.endsWith(`@${universityDomain}`)) {
         toast.error(`Please use your ${selectedUniversity} email address`);
         return;
       }
+      
+      if (email === demoStudentCredentials.email && password === demoStudentCredentials.password) {
+        localStorage.setItem("mindease_user", JSON.stringify({
+          type: "student",
+          name: "Sam Johnson",
+          university: selectedUniversity,
+          email: email
+        }));
+        toast.success("Student login successful");
+        navigate("/");
+      } else {
+        toast.error("Invalid credentials. Try using: student@howard.edu / password123");
+      }
+    } else {
+      // Admin login
+      if (email === demoAdminCredentials.email && password === demoAdminCredentials.password) {
+        localStorage.setItem("mindease_user", JSON.stringify({
+          type: "admin",
+          name: "Admin User",
+          email: email
+        }));
+        toast.success("Admin login successful");
+        navigate("/");
+      } else {
+        toast.error("Invalid admin credentials. Try using: admin@mindease.com / admin123");
+      }
     }
-    
-    toast.success(`${loginType === "student" ? "Student" : "Admin"} login successful`);
-    navigate("/");
   };
 
   return (
@@ -79,7 +114,10 @@ const Login = () => {
                   {loginType === "student" && (
                     <div className="space-y-2">
                       <Label htmlFor="university">Select your university</Label>
-                      <Select onValueChange={setSelectedUniversity}>
+                      <Select 
+                        defaultValue="Howard University"
+                        onValueChange={setSelectedUniversity}
+                      >
                         <SelectTrigger id="university">
                           <SelectValue placeholder="Select university" />
                         </SelectTrigger>
@@ -101,8 +139,8 @@ const Login = () => {
                       type="email" 
                       placeholder={loginType === "student" ? 
                         (selectedUniversity ? 
-                          `your.name@${universities.find(u => u.name === selectedUniversity)?.domain}` : 
-                          "your.name@university.edu") : 
+                          `student@${universities.find(u => u.name === selectedUniversity)?.domain}` : 
+                          "student@university.edu") : 
                         "admin@mindease.com"
                       }
                       value={email}
@@ -125,6 +163,12 @@ const Login = () => {
                       onChange={(e) => setPassword(e.target.value)}
                       required
                     />
+                    {loginType === "student" && (
+                      <p className="text-xs text-muted-foreground">Demo: student@howard.edu / password123</p>
+                    )}
+                    {loginType === "admin" && (
+                      <p className="text-xs text-muted-foreground">Demo: admin@mindease.com / admin123</p>
+                    )}
                   </div>
                 </div>
                 

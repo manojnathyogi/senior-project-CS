@@ -313,19 +313,108 @@ npm run test  # If test setup exists
 
 ## Deployment
 
-### Backend Deployment
+### Railway Deployment
+
+Railway is a cloud platform that can deploy both frontend and backend services. Follow these steps:
+
+#### Prerequisites
+
+1. Create a Railway account at [railway.app](https://railway.app)
+2. Install Railway CLI (optional): `npm i -g @railway/cli`
+
+#### Step 1: Create a New Project
+
+1. Go to [Railway Dashboard](https://railway.app/dashboard)
+2. Click "New Project"
+3. Select "Deploy from GitHub repo"
+4. Connect your GitHub account and select `senior-project-CS` repository
+
+#### Step 2: Add PostgreSQL Database
+
+1. In your Railway project, click "New"
+2. Select "Database" → "Add PostgreSQL"
+3. Railway will automatically create a PostgreSQL database
+4. The `DATABASE_URL` environment variable will be automatically set
+
+#### Step 3: Configure Environment Variables
+
+In Railway project settings, add these environment variables:
+
+**Required Variables:**
+```
+SECRET_KEY=your-secret-key-here-generate-a-random-string
+DEBUG=False
+ALLOWED_HOSTS=your-app-name.railway.app,*.railway.app
+USE_SQLITE=False
+FRONTEND_URL=https://your-frontend-url.railway.app
+```
+
+**Email Configuration:**
+```
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USE_TLS=True
+EMAIL_HOST_USER=your-email@gmail.com
+EMAIL_HOST_PASSWORD=your-gmail-app-password
+DEFAULT_FROM_EMAIL=noreply@mindease.com
+```
+
+**Note:** Railway automatically provides `DATABASE_URL` when you add PostgreSQL, so you don't need to set DB_NAME, DB_USER, etc.
+
+#### Step 4: Deploy Backend Service
+
+1. Railway will automatically detect the Python backend
+2. Set the root directory to `/backend` in service settings
+3. Set the start command to: `python manage.py migrate && gunicorn mindease.wsgi:application --bind 0.0.0.0:$PORT`
+4. Railway will automatically build and deploy
+
+#### Step 5: Deploy Frontend Service (Optional - Separate Service)
+
+If you want to deploy frontend separately:
+
+1. Add a new service in Railway
+2. Set root directory to `/` (project root)
+3. Set build command to: `npm install && npm run build`
+4. Set start command to: `npx serve -s dist -l $PORT`
+5. Add environment variable: `VITE_API_BASE_URL=https://your-backend-url.railway.app/api`
+
+#### Step 6: Update CORS Settings
+
+After deployment, update your backend's `FRONTEND_URL` environment variable to match your frontend URL.
+
+#### Step 7: Run Migrations
+
+Railway will automatically run migrations on deploy (configured in Procfile), but you can also run manually:
+
+1. Go to your backend service in Railway
+2. Click "Deployments" → "View Logs"
+3. Or use Railway CLI: `railway run python manage.py migrate`
+
+#### Step 8: Create Superuser
+
+Create an admin account:
+
+```bash
+railway run python manage.py createsuperuser
+```
+
+Or use Railway's web terminal in the service dashboard.
+
+### Alternative Deployment Methods
+
+#### Backend Deployment (Other Platforms)
 
 1. Set `DEBUG=False` in production
 2. Configure production database (PostgreSQL recommended)
 3. Set secure `SECRET_KEY`
 4. Configure `ALLOWED_HOSTS` with your domain
-5. Set up static file serving
-6. Use production WSGI server (gunicorn, uwsgi)
+5. Set up static file serving (WhiteNoise is configured)
+6. Use production WSGI server (gunicorn)
 
-### Frontend Deployment
+#### Frontend Deployment
 
 1. Build production bundle: `npm run build`
-2. Serve `dist/` directory with a web server (nginx, Apache)
+2. Serve `dist/` directory with a web server (nginx, Apache, Vercel, Netlify)
 3. Configure API base URL for production
 4. Set up HTTPS
 

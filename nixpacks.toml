@@ -1,0 +1,17 @@
+[phases.setup]
+nixPkgs = ["nodejs-18_x", "python311"]
+
+[phases.install]
+cmds = [
+  "cd backend && pip install -r requirements.txt",
+  "npm install"
+]
+
+[phases.build]
+cmds = [
+  "npm run build"
+]
+
+[start]
+cmd = "cd backend && python manage.py migrate && gunicorn mindease.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120"
+

@@ -2,7 +2,7 @@
 
 MindEase is a comprehensive mental health support platform designed for university students, featuring mood tracking, CBT exercises, peer support, counseling integration, and administrative analytics.
 
-## 🚀 Features
+## Features
 
 ### For Students
 - **Mood Tracking**: Log daily moods with sentiment analysis
@@ -25,7 +25,7 @@ MindEase is a comprehensive mental health support platform designed for universi
 - **Communication**: Direct messaging with students
 - **Risk Monitoring**: Track student risk levels and mood trends
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Frontend
 - **React 18** with TypeScript
@@ -43,7 +43,7 @@ MindEase is a comprehensive mental health support platform designed for universi
 - **Email OTP** for email verification
 - **CORS** enabled for frontend integration
 
-## 📋 Prerequisites
+## Prerequisites
 
 - **Node.js** (v18 or higher)
 - **Python** (v3.11 or higher)
@@ -51,7 +51,7 @@ MindEase is a comprehensive mental health support platform designed for universi
 - **PostgreSQL** (optional, for production)
 - **Gmail Account** (for email OTP functionality)
 
-## 🔧 Installation
+## Installation
 
 ### 1. Clone the Repository
 
@@ -111,7 +111,7 @@ npm run dev
 
 The frontend will be available at `http://localhost:8080`
 
-## ⚙️ Configuration
+## Configuration
 
 ### Backend Environment Variables
 
@@ -157,7 +157,7 @@ Create a `.env` file in the project root (optional):
 VITE_API_BASE_URL=http://localhost:8000/api
 ```
 
-## 🏃 Running the Project
+## Running the Project
 
 ### Development Mode
 
@@ -188,7 +188,7 @@ python manage.py collectstatic
 # Configure your production server (gunicorn, uwsgi, etc.)
 ```
 
-## 📡 API Endpoints
+## API Endpoints
 
 ### Authentication (`/api/auth/`)
 
@@ -230,7 +230,7 @@ python manage.py collectstatic
 - `POST /` - Get access/refresh tokens
 - `POST /refresh/` - Refresh access token
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 spec-sheet-delight/
@@ -264,7 +264,7 @@ spec-sheet-delight/
 └── README.md            # This file
 ```
 
-## 🔐 Authentication Flow
+## Authentication Flow
 
 1. **Signup with OTP:**
    - User enters email and optional password
@@ -281,7 +281,7 @@ spec-sheet-delight/
    - **Admin**: Access to admin dashboard and user management
    - **Counselor**: Access to counselor dashboard and student cases
 
-## 🎨 User Roles
+## User Roles
 
 ### Student
 - Default role for new signups
@@ -298,7 +298,7 @@ spec-sheet-delight/
 - Access to assigned student cases
 - Can communicate with students
 
-## 🧪 Testing
+## Testing
 
 ### Backend Tests
 ```bash
@@ -311,7 +311,7 @@ python manage.py test
 npm run test  # If test setup exists
 ```
 
-## 🚢 Deployment
+## Deployment
 
 ### Backend Deployment
 
@@ -329,14 +329,14 @@ npm run test  # If test setup exists
 3. Configure API base URL for production
 4. Set up HTTPS
 
-## 📝 Development Notes
+## Development Notes
 
 - **Database**: SQLite is used by default for development. Switch to PostgreSQL for production.
 - **Email**: Gmail SMTP is configured. Ensure app password is set correctly.
 - **CORS**: CORS is enabled for localhost:8080. Update for production domains.
 - **JWT Tokens**: Access tokens expire in 15 minutes, refresh tokens in 7 days.
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch
@@ -344,18 +344,18 @@ npm run test  # If test setup exists
 4. Test thoroughly
 5. Submit a pull request
 
-## 📄 License
+## License
 
-[Add your license information here]
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🆘 Support
+## Support
 
 For issues or questions:
 - Check existing issues in the repository
 - Create a new issue with detailed description
 - Contact the development team
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - Built with Django REST Framework
 - UI components from shadcn/ui

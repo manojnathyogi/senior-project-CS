@@ -9,13 +9,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
 import VerificationCode from "@/components/signup/VerificationCode";
+import { api } from "@/lib/api";
 
 const universities = [
-  { name: "Howard University", domain: "howard.edu" },
-  { name: "Georgetown University", domain: "georgetown.edu" },
-  { name: "University of Maryland", domain: "umd.edu" },
-  { name: "George Washington University", domain: "gwu.edu" },
-  { name: "American University", domain: "american.edu" },
+  { name: "Howard University", domains: ["howard.edu", "bison.howard.edu"] },
+  { name: "Georgetown University", domains: ["georgetown.edu"] },
+  { name: "University of Maryland", domains: ["umd.edu"] },
+  { name: "George Washington University", domains: ["gwu.edu"] },
+  { name: "American University", domains: ["american.edu"] },
 ];
 
 const SignUp = () => {
@@ -71,13 +72,17 @@ const SignUp = () => {
       newErrors.email = "Email is required";
       valid = false;
     } else {
-      const university = universities.find((uni) => uni.name === formData.university);
-      if (university && !formData.email.endsWith(`@${university.domain}`)) {
-        newErrors.email = `Please use your ${formData.university} email address`;
+      // Check if email is from Howard University (must be @howard.edu or @bison.howard.edu)
+      const emailDomain = '@' + formData.email.split('@')[1];
+      const allowedDomains = ['@howard.edu', '@bison.howard.edu'];
+      
+      if (!allowedDomains.includes(emailDomain)) {
+        newErrors.email = "Email must be from Howard University (@howard.edu or @bison.howard.edu)";
         valid = false;
       }
     }
 
+    // Password is required for signup
     if (!formData.password) {
       newErrors.password = "Password is required";
       valid = false;
@@ -85,8 +90,11 @@ const SignUp = () => {
       newErrors.password = "Password must be at least 6 characters";
       valid = false;
     }
-
-    if (formData.password !== formData.confirmPassword) {
+    
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = "Please confirm your password";
+      valid = false;
+    } else if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = "Passwords do not match";
       valid = false;
     }
@@ -95,38 +103,42 @@ const SignUp = () => {
     return valid;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!validateForm()) {
       return;
     }
 
-    // Send verification code to email (in a real app)
-    // Here we just move to the verification step
-    toast.info(`Verification code sent to ${formData.email}`);
-    setStep(2);
+    setLoading(true);
+    
+    try {
+      // Request OTP from Django backend (this will send verification email)
+      await api.requestOTP(formData.email, 'signup');
+      toast.success(`Verification code sent to ${formData.email}`);
+      setStep(2);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to send verification code");
+    } finally {
+      setLoading(false);
+    }
   };
   
-  const handleVerificationComplete = () => {
-    // Create account after verification is complete
-    toast.success("Account created successfully!");
-    
-    // Store the new user in localStorage (in a real app, this would be handled by a backend)
-    localStorage.setItem("mindease_user", JSON.stringify({
-      type: "student",
-      name: formData.fullName,
-      username: formData.username,
-      university: formData.university,
-      email: formData.email
-    }));
-    
-    navigate("/");
+  const handleVerificationComplete = async () => {
+    // After email verification, user profile is already created
+    toast.success("Email verified! Account created successfully.");
+    navigate("/login");
   };
   
-  const handleResendCode = () => {
-    // In a real app, this would resend the code
-    console.log("Resending code to", formData.email);
+  const handleResendCode = async () => {
+    try {
+      await api.requestOTP(formData.email, 'signup');
+      toast.success("Verification code resent!");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to resend verification code");
+    }
   };
 
   const renderForm = () => (
@@ -170,7 +182,7 @@ const SignUp = () => {
           </SelectTrigger>
           <SelectContent>
             {universities.map((uni) => (
-              <SelectItem key={uni.domain} value={uni.name}>
+              <SelectItem key={uni.name} value={uni.name}>
                 {uni.name}
               </SelectItem>
             ))}
@@ -180,53 +192,64 @@ const SignUp = () => {
       
       <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
-        <Input
-          id="email"
-          name="email"
-          type="email"
-          placeholder={`student@${
-            universities.find((uni) => uni.name === formData.university)?.domain
-          }`}
-          value={formData.email}
-          onChange={handleChange}
-        />
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            placeholder={
+              formData.university === "Howard University" 
+                ? "student@howard.edu or student@bison.howard.edu"
+                : `student@${
+                    universities.find((uni) => uni.name === formData.university)?.domains[0]
+                  }`
+            }
+            value={formData.email}
+            onChange={handleChange}
+          />
         {errors.email && (
           <p className="text-xs text-destructive">{errors.email}</p>
         )}
       </div>
       
-      <div className="space-y-2">
-        <Label htmlFor="password">Password</Label>
-        <Input
-          id="password"
-          name="password"
-          type="password"
-          value={formData.password}
-          onChange={handleChange}
-        />
-        {errors.password && (
-          <p className="text-xs text-destructive">{errors.password}</p>
-        )}
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="confirmPassword">Confirm Password</Label>
-        <Input
-          id="confirmPassword"
-          name="confirmPassword"
-          type="password"
-          value={formData.confirmPassword}
-          onChange={handleChange}
-        />
-        {errors.confirmPassword && (
-          <p className="text-xs text-destructive">
-            {errors.confirmPassword}
+        <div className="space-y-2">
+          <Label htmlFor="password">Password</Label>
+          <Input
+            id="password"
+            name="password"
+            type="password"
+            placeholder="Create a secure password"
+            value={formData.password}
+            onChange={handleChange}
+            required
+          />
+          {errors.password && (
+            <p className="text-xs text-destructive">{errors.password}</p>
+          )}
+          <p className="text-xs text-muted-foreground">
+            Must be at least 6 characters. You can also login with OTP code later.
           </p>
-        )}
-      </div>
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="confirmPassword">Confirm Password</Label>
+          <Input
+            id="confirmPassword"
+            name="confirmPassword"
+            type="password"
+            placeholder="Confirm your password"
+            value={formData.confirmPassword}
+            onChange={handleChange}
+            required
+          />
+          {errors.confirmPassword && (
+            <p className="text-xs text-destructive">
+              {errors.confirmPassword}
+            </p>
+          )}
+        </div>
       
-      <Button type="submit" className="w-full mt-6">
-        Create Account
+      <Button type="submit" className="w-full mt-6" disabled={loading}>
+        {loading ? "Creating Account..." : "Create Account"}
       </Button>
     </form>
   );
@@ -269,6 +292,13 @@ const SignUp = () => {
                 email={formData.email}
                 onVerify={handleVerificationComplete}
                 onResend={handleResendCode}
+                userData={{
+                  name: formData.fullName,
+                  username: formData.username,
+                  university: formData.university,
+                  role: "student",
+                  password: formData.password, // Password is required
+                }}
               />
             )}
           </CardContent>

@@ -3,14 +3,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
-
-interface User {
-  type: "student" | "admin";
-  name: string;
-  university?: string;
-  email: string;
-}
+import { useAuth, type User } from "@/hooks/useAuth";
 
 interface UserMenuProps {
   user: User | null;
@@ -18,11 +11,10 @@ interface UserMenuProps {
 
 const UserMenu = ({ user }: UserMenuProps) => {
   const navigate = useNavigate();
+  const { signOut } = useAuth();
   
   const handleLogout = () => {
-    localStorage.removeItem("mindease_user");
-    toast.success("Successfully logged out");
-    navigate("/login");
+    signOut();
   };
   
   const goToAdminDashboard = () => {
@@ -46,7 +38,7 @@ const UserMenu = ({ user }: UserMenuProps) => {
       <span className="text-sm font-medium mr-2 hidden sm:inline-block">
         {user.name}
       </span>
-      {user.type === "admin" && (
+      {user.role === "admin" && (
         <Button 
           variant="outline" 
           size="sm"

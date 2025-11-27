@@ -1,4 +1,5 @@
 
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
@@ -18,80 +19,43 @@ import {
   Pie,
   Cell
 } from "recharts";
+import { api } from "@/lib/api";
 
 interface MentalHealthTrendsProps {
   timeFilter: string;
 }
 
 const MentalHealthTrends = ({ timeFilter }: MentalHealthTrendsProps) => {
-  // Demo data for visualizations
-  const getMoodData = () => {
-    if (timeFilter === "day") {
-      return [
-        { name: "6am", anxiety: 30, depression: 20, stress: 45, wellness: 60 },
-        { name: "9am", anxiety: 40, depression: 25, stress: 50, wellness: 55 },
-        { name: "12pm", anxiety: 35, depression: 30, stress: 40, wellness: 60 },
-        { name: "3pm", anxiety: 50, depression: 40, stress: 45, wellness: 50 },
-        { name: "6pm", anxiety: 45, depression: 35, stress: 40, wellness: 55 },
-        { name: "9pm", anxiety: 30, depression: 25, stress: 30, wellness: 65 },
-      ];
-    } else {
-      return [
-        { name: "Mon", anxiety: 30, depression: 20, stress: 45, wellness: 60 },
-        { name: "Tue", anxiety: 40, depression: 25, stress: 50, wellness: 55 },
-        { name: "Wed", anxiety: 35, depression: 30, stress: 40, wellness: 60 },
-        { name: "Thu", anxiety: 50, depression: 40, stress: 45, wellness: 50 },
-        { name: "Fri", anxiety: 45, depression: 35, stress: 40, wellness: 55 },
-        { name: "Sat", anxiety: 30, depression: 25, stress: 30, wellness: 65 },
-        { name: "Sun", anxiety: 25, depression: 20, stress: 25, wellness: 70 },
-      ];
-    }
-  };
-  
-  const getUsageData = () => {
-    if (timeFilter === "day") {
-      return [
-        { name: "6am", mood: 5, meditation: 2, cbt: 1, journal: 0 },
-        { name: "9am", mood: 15, meditation: 8, cbt: 5, journal: 3 },
-        { name: "12pm", mood: 10, meditation: 12, cbt: 7, journal: 5 },
-        { name: "3pm", mood: 8, meditation: 6, cbt: 10, journal: 7 },
-        { name: "6pm", mood: 20, meditation: 10, cbt: 8, journal: 12 },
-        { name: "9pm", mood: 25, meditation: 15, cbt: 12, journal: 15 },
-      ];
-    } else {
-      return [
-        { name: "Mon", mood: 25, meditation: 18, cbt: 12, journal: 15 },
-        { name: "Tue", mood: 30, meditation: 20, cbt: 15, journal: 12 },
-        { name: "Wed", mood: 35, meditation: 25, cbt: 20, journal: 18 },
-        { name: "Thu", mood: 40, meditation: 22, cbt: 18, journal: 20 },
-        { name: "Fri", mood: 35, meditation: 18, cbt: 15, journal: 16 },
-        { name: "Sat", mood: 20, meditation: 35, cbt: 10, journal: 8 },
-        { name: "Sun", mood: 15, meditation: 30, cbt: 8, journal: 10 },
-      ];
-    }
-  };
+  const [moodData, setMoodData] = useState<any[]>([]);
+  const [usageData, setUsageData] = useState<any[]>([]);
+  const [riskData, setRiskData] = useState<any[]>([]);
+  const [campusData, setCampusData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const getRiskData = () => {
-    return [
-      { name: "Low Risk", value: 70, color: "#4ade80" },
-      { name: "Medium Risk", value: 20, color: "#facc15" },
-      { name: "High Risk", value: 10, color: "#f87171" },
-    ];
-  };
-  
-  const getCampusData = () => {
-    return [
-      { name: "Howard", value: 40 },
-      { name: "Georgetown", value: 25 },
-      { name: "Maryland", value: 20 },
-      { name: "American", value: 15 },
-    ];
-  };
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        const [mood, usage, risk, campus] = await Promise.all([
+          api.getMoodMetrics(timeFilter).catch(() => []),
+          api.getFeatureUsage(timeFilter).catch(() => []),
+          api.getRiskAssessment(timeFilter).catch(() => []),
+          api.getCampusDistribution(timeFilter).catch(() => [])
+        ]);
 
-  const moodData = getMoodData();
-  const usageData = getUsageData();
-  const riskData = getRiskData();
-  const campusData = getCampusData();
+        setMoodData(mood || []);
+        setUsageData(usage || []);
+        setRiskData(risk || []);
+        setCampusData(campus || []);
+      } catch (error) {
+        console.error("Error loading trends data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [timeFilter]);
   
   // Colors for charts
   const COLORS = {
@@ -124,22 +88,31 @@ const MentalHealthTrends = ({ timeFilter }: MentalHealthTrendsProps) => {
               </CardDescription>
             </CardHeader>
             <CardContent className="h-[400px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={moodData}
-                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="anxiety" stroke={COLORS.anxiety} />
-                  <Line type="monotone" dataKey="depression" stroke={COLORS.depression} />
-                  <Line type="monotone" dataKey="stress" stroke={COLORS.stress} />
-                  <Line type="monotone" dataKey="wellness" stroke={COLORS.wellness} />
-                </LineChart>
-              </ResponsiveContainer>
+              {moodData.every(d => d.anxiety === 0 && d.depression === 0 && d.stress === 0 && d.wellness === 0) ? (
+                <div className="flex items-center justify-center h-full text-center text-muted-foreground">
+                  <div>
+                    <p className="text-lg font-medium">No data available</p>
+                    <p className="text-sm mt-1">Mental health metrics will appear here once students start using the app</p>
+                  </div>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={moodData}
+                    margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line type="monotone" dataKey="anxiety" stroke={COLORS.anxiety} />
+                    <Line type="monotone" dataKey="depression" stroke={COLORS.depression} />
+                    <Line type="monotone" dataKey="stress" stroke={COLORS.stress} />
+                    <Line type="monotone" dataKey="wellness" stroke={COLORS.wellness} />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -153,22 +126,37 @@ const MentalHealthTrends = ({ timeFilter }: MentalHealthTrendsProps) => {
               </CardDescription>
             </CardHeader>
             <CardContent className="h-[400px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={usageData}
-                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="mood" fill={COLORS.mood} name="Mood Tracker" />
-                  <Bar dataKey="meditation" fill={COLORS.meditation} name="Meditation" />
-                  <Bar dataKey="cbt" fill={COLORS.cbt} name="CBT Exercises" />
-                  <Bar dataKey="journal" fill={COLORS.journal} name="Journal" />
-                </BarChart>
-              </ResponsiveContainer>
+              {loading ? (
+                <div className="flex items-center justify-center h-full text-center text-muted-foreground">
+                  <div>
+                    <p className="text-lg font-medium">Loading...</p>
+                  </div>
+                </div>
+              ) : usageData.length === 0 || usageData.every(d => d.mood === 0 && d.meditation === 0 && d.cbt === 0 && d.journal === 0) ? (
+                <div className="flex items-center justify-center h-full text-center text-muted-foreground">
+                  <div>
+                    <p className="text-lg font-medium">No data available</p>
+                    <p className="text-sm mt-1">Feature usage data will appear here once students start using the app</p>
+                  </div>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={usageData}
+                    margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="mood" fill={COLORS.mood} name="Mood Tracker" />
+                    <Bar dataKey="meditation" fill={COLORS.meditation} name="Meditation" />
+                    <Bar dataKey="cbt" fill={COLORS.cbt} name="CBT Exercises" />
+                    <Bar dataKey="journal" fill={COLORS.journal} name="Journal" />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -183,26 +171,41 @@ const MentalHealthTrends = ({ timeFilter }: MentalHealthTrendsProps) => {
             </CardHeader>
             <CardContent>
               <div className="h-[400px] flex items-center justify-center">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={riskData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={100}
-                      outerRadius={140}
-                      paddingAngle={5}
-                      dataKey="value"
-                      label={({name, value}) => `${name}: ${value}%`}
-                    >
-                      {riskData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
+                {loading ? (
+                  <div className="flex items-center justify-center h-full text-center text-muted-foreground">
+                    <div>
+                      <p className="text-lg font-medium">Loading...</p>
+                    </div>
+                  </div>
+                ) : riskData.length === 0 || riskData.every(d => d.value === 0) ? (
+                  <div className="flex items-center justify-center h-full text-center text-muted-foreground">
+                    <div>
+                      <p className="text-lg font-medium">No data available</p>
+                      <p className="text-sm mt-1">Risk assessment data will appear here once students start using the app</p>
+                    </div>
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={riskData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={100}
+                        outerRadius={140}
+                        paddingAngle={5}
+                        dataKey="value"
+                        label={({name, value}) => `${name}: ${value}%`}
+                      >
+                        {riskData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -217,20 +220,35 @@ const MentalHealthTrends = ({ timeFilter }: MentalHealthTrendsProps) => {
               </CardDescription>
             </CardHeader>
             <CardContent className="h-[400px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={campusData}
-                  layout="vertical"
-                  margin={{ top: 5, right: 30, left: 70, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" />
-                  <YAxis type="category" dataKey="name" />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="value" fill="#8884d8" name="Usage %" />
-                </BarChart>
-              </ResponsiveContainer>
+              {loading ? (
+                <div className="flex items-center justify-center h-full text-center text-muted-foreground">
+                  <div>
+                    <p className="text-lg font-medium">Loading...</p>
+                  </div>
+                </div>
+              ) : campusData.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-center text-muted-foreground">
+                  <div>
+                    <p className="text-lg font-medium">No campus data available</p>
+                    <p className="text-sm mt-1">Campus usage data will appear here once students start using the app</p>
+                  </div>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={campusData}
+                    layout="vertical"
+                    margin={{ top: 5, right: 30, left: 70, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis type="number" />
+                    <YAxis type="category" dataKey="name" />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="value" fill="#8884d8" name="Usage %" />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

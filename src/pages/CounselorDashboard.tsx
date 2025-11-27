@@ -7,7 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MessageSquare, Users, Bell, AlertCircle, Calendar, User, Settings, Phone } from "lucide-react";
+import { MessageSquare, Users, Bell, AlertCircle, Calendar, User, Settings, Phone, LogOut } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 interface Student {
   id: string;
@@ -30,100 +32,39 @@ interface ChatMessage {
 
 const CounselorDashboard = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<any>(null);
+  const { user, loading: authLoading, signOut } = useAuth();
   const [activeStudent, setActiveStudent] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState("");
-  const [students, setStudents] = useState<Student[]>([
-    {
-      id: "1",
-      name: "Alex Johnson",
-      lastActive: "2 hours ago",
-      moodScore: 45,
-      riskLevel: "high",
-      adminRecommended: true,
-      hasUnread: true,
-    },
-    {
-      id: "2",
-      name: "Jordan Lee",
-      lastActive: "Yesterday",
-      moodScore: 68,
-      riskLevel: "medium",
-      adminRecommended: true,
-      hasUnread: false,
-    },
-    {
-      id: "3",
-      name: "Taylor Smith",
-      lastActive: "3 days ago",
-      moodScore: 82,
-      riskLevel: "low",
-      adminRecommended: false,
-      hasUnread: false,
-    },
-  ]);
+  const [students, setStudents] = useState<Student[]>([]);
   
-  const [messages, setMessages] = useState<Record<string, ChatMessage[]>>({
-    "1": [
-      {
-        id: "1-1",
-        studentId: "1",
-        text: "I've been feeling overwhelmed lately with all my classes.",
-        sender: "student",
-        timestamp: "Yesterday, 3:45 PM",
-        read: true,
-      },
-      {
-        id: "1-2",
-        studentId: "1",
-        text: "I understand that feeling. Would you like to talk about some strategies to manage your workload?",
-        sender: "counselor",
-        timestamp: "Yesterday, 4:00 PM",
-        read: true,
-      },
-      {
-        id: "1-3",
-        studentId: "1",
-        text: "Yes, I think that would help. I'm struggling to keep up with everything.",
-        sender: "student",
-        timestamp: "Today, 9:15 AM",
-        read: false,
-      },
-    ],
-    "2": [
-      {
-        id: "2-1",
-        studentId: "2",
-        text: "The meditation exercises have been helping, but I still have trouble sleeping.",
-        sender: "student",
-        timestamp: "Last week",
-        read: true,
-      },
-      {
-        id: "2-2",
-        studentId: "2",
-        text: "That's good progress! Let's discuss some additional techniques specifically for sleep improvement.",
-        sender: "counselor",
-        timestamp: "Last week",
-        read: true,
-      },
-    ],
-    "3": [],
-  });
+  const [messages, setMessages] = useState<Record<string, ChatMessage[]>>({});
   
   useEffect(() => {
-    const storedUser = localStorage.getItem("mindease_user");
-    if (storedUser) {
-      const parsedUser = JSON.parse(storedUser);
-      if (parsedUser.type === "counselor") {
-        setUser(parsedUser);
-      } else {
-        navigate("/counselor-login");
+    if (!authLoading) {
+      if (!user) {
+        navigate("/counselor-login", { replace: true });
+      } else if (user.role !== "counselor") {
+        toast.error("Access denied. Counselor access required.");
+        navigate("/login", { replace: true });
       }
-    } else {
-      navigate("/counselor-login");
     }
-  }, [navigate]);
+  }, [user, authLoading, navigate]);
+  
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/counselor-login");
+  };
+  
+  const getRiskBadge = (risk: "low" | "medium" | "high") => {
+    switch (risk) {
+      case "high":
+        return <Badge className="bg-red-500">High Risk</Badge>;
+      case "medium":
+        return <Badge className="bg-amber-500">Medium Risk</Badge>;
+      default:
+        return <Badge className="bg-green-500">Low Risk</Badge>;
+    }
+  };
   
   const handleSendMessage = () => {
     if (!activeStudent || !newMessage.trim()) return;
@@ -155,21 +96,24 @@ const CounselorDashboard = () => {
       );
     }
   };
-  
-  const getRiskBadge = (risk: "low" | "medium" | "high") => {
-    switch (risk) {
-      case "high":
-        return <Badge className="bg-red-500">High Risk</Badge>;
-      case "medium":
-        return <Badge className="bg-amber-500">Medium Risk</Badge>;
-      default:
-        return <Badge className="bg-green-500">Low Risk</Badge>;
-    }
-  };
 
-  if (!user) {
+  if (authLoading) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
   }
+
+  if (!user || user.role !== "counselor") {
+    return null; // Will redirect via useEffect
+  }
+  
+  // Get user initials for avatar
+  const getUserInitials = () => {
+    if (!user.name) return "C";
+    const names = user.name.split(" ");
+    if (names.length >= 2) {
+      return (names[0][0] + names[names.length - 1][0]).toUpperCase();
+    }
+    return user.name.substring(0, 2).toUpperCase();
+  };
   
   return (
     <div className="min-h-screen flex flex-col">
@@ -181,11 +125,12 @@ const CounselorDashboard = () => {
             </div>
             <div>
               <h1 className="text-xl font-bold">MindEase Counselor Portal</h1>
-              <p className="text-sm text-muted-foreground">{user.university || "University Counseling Center"}</p>
+              <p className="text-sm text-muted-foreground">{user.name || "Counselor"} • {user.university || "University Counseling Center"}</p>
             </div>
           </div>
           
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
+            <span className="text-sm font-medium hidden md:inline-block">{user.name}</span>
             <Button 
               variant="destructive" 
               size="icon" 
@@ -195,15 +140,11 @@ const CounselorDashboard = () => {
             >
               <Phone size={18} />
             </Button>
-            <Button variant="ghost" size="icon" className="rounded-full">
-              <Settings size={20} />
+            <Button variant="ghost" size="icon" className="rounded-full" onClick={handleLogout}>
+              <LogOut size={18} />
             </Button>
-            <Button variant="ghost" size="icon" className="rounded-full">
-              <Bell size={20} />
-            </Button>
-            <Avatar className="h-8 w-8 cursor-pointer">
-              <AvatarImage src="https://placehold.co/200x200/png?text=DC" />
-              <AvatarFallback>DC</AvatarFallback>
+            <Avatar className="h-8 w-8">
+              <AvatarFallback>{getUserInitials()}</AvatarFallback>
             </Avatar>
           </div>
         </div>
@@ -220,7 +161,13 @@ const CounselorDashboard = () => {
           </div>
           
           <div className="p-2">
-            {students.map(student => (
+            {students.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <p className="text-sm">No student cases assigned yet.</p>
+                <p className="text-xs mt-1">Students requiring counseling will appear here.</p>
+              </div>
+            ) : (
+              students.map(student => (
               <div 
                 key={student.id}
                 className={`p-3 rounded-lg mb-2 cursor-pointer hover:bg-slate-50 ${
@@ -255,7 +202,8 @@ const CounselorDashboard = () => {
                   )}
                 </div>
               </div>
-            ))}
+            ))
+            )}
           </div>
         </div>
         
@@ -291,8 +239,16 @@ const CounselorDashboard = () => {
               
               {/* Chat area */}
               <div className="flex-1 flex flex-col p-4 overflow-y-auto">
-                <div className="space-y-4 flex-1">
-                  {messages[activeStudent]?.map((message) => (
+                {messages[activeStudent] && messages[activeStudent].length === 0 ? (
+                  <div className="flex-1 flex items-center justify-center">
+                    <div className="text-center text-muted-foreground">
+                      <p className="text-sm">No messages yet.</p>
+                      <p className="text-xs mt-1">Start a conversation with this student.</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4 flex-1">
+                    {messages[activeStudent]?.map((message) => (
                     <div
                       key={message.id}
                       className={`flex ${
@@ -316,8 +272,9 @@ const CounselorDashboard = () => {
                         </div>
                       </div>
                     </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
               
               {/* Message input */}

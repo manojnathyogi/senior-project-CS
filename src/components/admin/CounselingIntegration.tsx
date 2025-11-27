@@ -1,15 +1,194 @@
-
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { api } from "@/lib/api";
+
+interface System {
+  id: string;
+  name: string;
+  description: string;
+  connected: boolean;
+  enabled: boolean;
+}
+
+interface IntegrationSettings {
+  systems: System[];
+  dataSharing: {
+    shareAnonymizedStats: boolean;
+    shareRiskAssessment: boolean;
+    shareEngagementMetrics: boolean;
+    allowJournalAccess: boolean;
+  };
+  apiConfig: {
+    endpoint: string;
+    apiKey: string;
+    webhookUrl: string;
+  };
+  status: {
+    overall: string;
+    history: Array<{
+      title: string;
+      description: string;
+      timestamp: string;
+    }>;
+  };
+}
 
 const CounselingIntegration = () => {
-  const handleConnect = () => {
-    toast.success("Successfully connected to university counseling system");
+  const [settings, setSettings] = useState<IntegrationSettings | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [apiConfig, setApiConfig] = useState({
+    endpoint: '',
+    apiKey: '',
+    webhookUrl: ''
+  });
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      setLoading(true);
+      try {
+        const data = await api.getIntegrationSettings();
+        setSettings(data);
+        setApiConfig(data.apiConfig || { endpoint: '', apiKey: '', webhookUrl: '' });
+      } catch (error) {
+        console.error("Error loading integration settings:", error);
+        toast.error("Failed to load integration settings");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadSettings();
+  }, []);
+
+  const handleSystemToggle = async (systemId: string, enabled: boolean) => {
+    if (!settings) return;
+
+    const updatedSystems = settings.systems.map(sys =>
+      sys.id === systemId ? { ...sys, enabled } : sys
+    );
+
+    const updatedSettings = {
+      ...settings,
+      systems: updatedSystems
+    };
+
+    setSettings(updatedSettings);
+
+    try {
+      await api.updateIntegrationSettings(updatedSettings);
+      toast.success(`${enabled ? 'Enabled' : 'Disabled'} ${systemId.replace('_', ' ')}`);
+    } catch (error) {
+      console.error("Error updating system:", error);
+      toast.error("Failed to update system settings");
+      // Revert on error
+      setSettings(settings);
+    }
   };
+
+  const handleDataSharingToggle = async (key: string, value: boolean) => {
+    if (!settings) return;
+
+    const updatedDataSharing = {
+      ...settings.dataSharing,
+      [key]: value
+    };
+
+    const updatedSettings = {
+      ...settings,
+      dataSharing: updatedDataSharing
+    };
+
+    setSettings(updatedSettings);
+
+    try {
+      await api.updateIntegrationSettings(updatedSettings);
+    } catch (error) {
+      console.error("Error updating data sharing:", error);
+      toast.error("Failed to update data sharing settings");
+      setSettings(settings);
+    }
+  };
+
+  const handleApiConfigChange = (key: string, value: string) => {
+    setApiConfig(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleConnect = async () => {
+    if (!settings) return;
+
+    setSaving(true);
+    try {
+      const updatedSettings = {
+        ...settings,
+        apiConfig
+      };
+      await api.updateIntegrationSettings(updatedSettings);
+      toast.success("Integration settings saved successfully");
+    } catch (error) {
+      console.error("Error connecting:", error);
+      toast.error("Failed to save integration settings");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const getStatusBadge = (connected: boolean) => {
+    return connected ? (
+      <Badge className="bg-green-600">Connected</Badge>
+    ) : (
+      <Badge variant="outline">Not Connected</Badge>
+    );
+  };
+
+  const getOverallStatus = () => {
+    if (!settings) return { text: 'Not Configured', color: 'bg-gray-500' };
+    
+    switch (settings.status.overall) {
+      case 'operational':
+        return { text: 'All systems operational', color: 'bg-green-500' };
+      case 'error':
+        return { text: 'Some systems have errors', color: 'bg-red-500' };
+      default:
+        return { text: 'Not configured', color: 'bg-gray-500' };
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="py-8">
+            <div className="text-center text-muted-foreground">
+              Loading integration settings...
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!settings) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="py-8">
+            <div className="text-center text-muted-foreground">
+              Failed to load integration settings. Please try again.
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const overallStatus = getOverallStatus();
 
   return (
     <div className="space-y-6">
@@ -25,59 +204,33 @@ const CounselingIntegration = () => {
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Available Systems</h3>
               
-              <div className="grid gap-4">
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="space-y-0.5">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-medium">Student Health Information System</h4>
-                      <Badge className="bg-green-600">Connected</Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Electronic Health Records system for student wellness data
-                    </p>
-                  </div>
-                  <Switch id="sys-1" defaultChecked />
+              {settings.systems.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No systems available. Systems will appear here once configured.
                 </div>
-                
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="space-y-0.5">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-medium">Appointment Scheduling System</h4>
-                      <Badge variant="outline">Not Connected</Badge>
+              ) : (
+                <div className="grid gap-4">
+                  {settings.systems.map((system) => (
+                    <div key={system.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-medium">{system.name}</h4>
+                          {getStatusBadge(system.connected)}
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {system.description}
+                        </p>
+                      </div>
+                      <Switch
+                        id={system.id}
+                        checked={system.enabled}
+                        onCheckedChange={(checked) => handleSystemToggle(system.id, checked)}
+                        disabled={!system.connected}
+                      />
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      Allow students to schedule counseling sessions directly
-                    </p>
-                  </div>
-                  <Switch id="sys-2" />
+                  ))}
                 </div>
-                
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="space-y-0.5">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-medium">Crisis Alert System</h4>
-                      <Badge className="bg-green-600">Connected</Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Emergency notification system for high-risk students
-                    </p>
-                  </div>
-                  <Switch id="sys-3" defaultChecked />
-                </div>
-                
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="space-y-0.5">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-medium">Resource Allocation System</h4>
-                      <Badge variant="outline">Not Connected</Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Connect to university budget and resource planning tools
-                    </p>
-                  </div>
-                  <Switch id="sys-4" />
-                </div>
-              </div>
+              )}
             </div>
             
             <div className="space-y-4">
@@ -85,27 +238,45 @@ const CounselingIntegration = () => {
               
               <div className="grid gap-4">
                 <div className="flex items-center space-x-2">
-                  <Switch id="share-1" defaultChecked />
-                  <Label htmlFor="share-1">Share anonymized usage statistics</Label>
+                  <Switch
+                    id="share-anonymized"
+                    checked={settings.dataSharing.shareAnonymizedStats}
+                    onCheckedChange={(checked) => handleDataSharingToggle('shareAnonymizedStats', checked)}
+                  />
+                  <Label htmlFor="share-anonymized">Share anonymized usage statistics</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Switch id="share-2" defaultChecked />
-                  <Label htmlFor="share-2">Share risk assessment data</Label>
+                  <Switch
+                    id="share-risk"
+                    checked={settings.dataSharing.shareRiskAssessment}
+                    onCheckedChange={(checked) => handleDataSharingToggle('shareRiskAssessment', checked)}
+                  />
+                  <Label htmlFor="share-risk">Share risk assessment data</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Switch id="share-3" />
-                  <Label htmlFor="share-3">Share individual student engagement metrics</Label>
+                  <Switch
+                    id="share-engagement"
+                    checked={settings.dataSharing.shareEngagementMetrics}
+                    onCheckedChange={(checked) => handleDataSharingToggle('shareEngagementMetrics', checked)}
+                  />
+                  <Label htmlFor="share-engagement">Share individual student engagement metrics</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Switch id="share-4" />
-                  <Label htmlFor="share-4">Allow counselors to view student journal entries</Label>
+                  <Switch
+                    id="share-journal"
+                    checked={settings.dataSharing.allowJournalAccess}
+                    onCheckedChange={(checked) => handleDataSharingToggle('allowJournalAccess', checked)}
+                  />
+                  <Label htmlFor="share-journal">Allow counselors to view student journal entries</Label>
                 </div>
               </div>
             </div>
           </div>
         </CardContent>
         <CardFooter>
-          <Button onClick={handleConnect}>Connect to University Systems</Button>
+          <Button onClick={handleConnect} disabled={saving}>
+            {saving ? 'Saving...' : 'Save Integration Settings'}
+          </Button>
         </CardFooter>
       </Card>
       
@@ -121,23 +292,33 @@ const CounselingIntegration = () => {
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="api-endpoint">API Endpoint</Label>
-                <div className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-muted-foreground ring-offset-background">
-                  https://counseling-api.university.edu/v1/
-                </div>
+                <Input
+                  id="api-endpoint"
+                  placeholder="https://counseling-api.university.edu/v1/"
+                  value={apiConfig.endpoint}
+                  onChange={(e) => handleApiConfigChange('endpoint', e.target.value)}
+                />
               </div>
               
               <div className="space-y-2">
                 <Label htmlFor="api-key">API Key</Label>
-                <div className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-muted-foreground ring-offset-background">
-                  ••••••••••••••••
-                </div>
+                <Input
+                  id="api-key"
+                  type="password"
+                  placeholder="Enter API key"
+                  value={apiConfig.apiKey}
+                  onChange={(e) => handleApiConfigChange('apiKey', e.target.value)}
+                />
               </div>
               
               <div className="space-y-2">
                 <Label htmlFor="webhook">Webhook URL</Label>
-                <div className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-muted-foreground ring-offset-background">
-                  https://mindease.app/api/webhook/university
-                </div>
+                <Input
+                  id="webhook"
+                  placeholder="https://mindease.app/api/webhook/university"
+                  value={apiConfig.webhookUrl}
+                  onChange={(e) => handleApiConfigChange('webhookUrl', e.target.value)}
+                />
               </div>
             </div>
           </CardContent>
@@ -153,35 +334,27 @@ const CounselingIntegration = () => {
           <CardContent>
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-green-500"></div>
-                <span>All systems operational</span>
+                <div className={`h-3 w-3 rounded-full ${overallStatus.color}`}></div>
+                <span>{overallStatus.text}</span>
               </div>
               
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="font-medium">API Connection Established</p>
-                    <p className="text-muted-foreground">Connection to university systems successful</p>
-                  </div>
-                  <p className="text-muted-foreground">Today, 10:24 AM</p>
+              {settings.status.history.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground text-sm">
+                  No integration history available. Status updates will appear here once integrations are configured and tested.
                 </div>
-                
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="font-medium">Student Health System Synced</p>
-                    <p className="text-muted-foreground">Data synchronized successfully</p>
-                  </div>
-                  <p className="text-muted-foreground">Today, 10:25 AM</p>
+              ) : (
+                <div className="space-y-3 text-sm">
+                  {settings.status.history.map((item, index) => (
+                    <div key={index} className="flex justify-between items-start">
+                      <div>
+                        <p className="font-medium">{item.title}</p>
+                        <p className="text-muted-foreground">{item.description}</p>
+                      </div>
+                      <p className="text-muted-foreground">{item.timestamp}</p>
+                    </div>
+                  ))}
                 </div>
-                
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="font-medium">Crisis Alert System Test</p>
-                    <p className="text-muted-foreground">Test alert sent and received</p>
-                  </div>
-                  <p className="text-muted-foreground">Today, 10:26 AM</p>
-                </div>
-              </div>
+              )}
             </div>
           </CardContent>
         </Card>

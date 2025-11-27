@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { ThemeProvider } from "@/hooks/useTheme";
+import { useAuth } from "@/hooks/useAuth";
 
 import Index from "./pages/Index";
 import Wellness from "./pages/Wellness";
@@ -22,16 +23,27 @@ import CounselorDashboard from "./pages/CounselorDashboard";
 
 const queryClient = new QueryClient();
 
+// Protected Route Component
+const ProtectedRoute = ({ children, requiredRole }: { children: React.ReactNode; requiredRole?: "student" | "admin" | "counselor" }) => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (requiredRole && user.role !== requiredRole) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+};
+
 const App = () => {
-  const [userType, setUserType] = useState<"student" | "admin" | "counselor" | null>(null);
-  
-  useEffect(() => {
-    const storedUser = localStorage.getItem("mindease_user");
-    if (storedUser) {
-      const user = JSON.parse(storedUser);
-      setUserType(user.type);
-    }
-  }, []);
+  const { user, loading } = useAuth();
   
   return (
     <QueryClientProvider client={queryClient}>
@@ -42,20 +54,23 @@ const App = () => {
           <BrowserRouter>
             <Routes>
               <Route path="/" element={
-                userType === "admin" ? <Navigate to="/admin" replace /> : 
-                userType === "counselor" ? <Navigate to="/counselor-dashboard" replace /> :
+                loading ? <div className="min-h-screen flex items-center justify-center">Loading...</div> :
+                user?.role === "admin" ? <Navigate to="/admin" replace /> : 
+                user?.role === "counselor" ? <Navigate to="/counselor-dashboard" replace /> :
                 <Index />
               } />
-              <Route path="/campus" element={<Campus />} />
-              <Route path="/wellness" element={<Wellness />} />
-              <Route path="/peers" element={<Peers />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<SignUp />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="/counselor-login" element={<CounselorLogin />} />
-              <Route path="/counselor-dashboard" element={<CounselorDashboard />} />
+              <Route path="/campus" element={<ProtectedRoute><Campus /></ProtectedRoute>} />
+              <Route path="/wellness" element={<ProtectedRoute><Wellness /></ProtectedRoute>} />
+              <Route path="/peers" element={<ProtectedRoute><Peers /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+              <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
+              <Route path="/signup" element={user ? <Navigate to="/" replace /> : <SignUp />} />
+              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+              <Route path="/admin" element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
+              <Route path="/counselor-login" element={
+                user?.role === "counselor" ? <Navigate to="/counselor-dashboard" replace /> : <CounselorLogin />
+              } />
+              <Route path="/counselor-dashboard" element={<ProtectedRoute requiredRole="counselor"><CounselorDashboard /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

@@ -20,8 +20,9 @@ interface ForgotPasswordDialogProps {
 
 export const ForgotPasswordDialog = ({ open, onOpenChange }: ForgotPasswordDialogProps) => {
   const [resetEmail, setResetEmail] = useState("");
+  const [loading, setLoading] = useState(false);
   
-  const handleForgotPassword = (e: React.FormEvent) => {
+  const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!resetEmail) {
@@ -29,10 +30,18 @@ export const ForgotPasswordDialog = ({ open, onOpenChange }: ForgotPasswordDialo
       return;
     }
     
-    // Simulate sending a password reset email
-    toast.success(`Password reset link sent to ${resetEmail}`);
-    onOpenChange(false);
-    setResetEmail("");
+    setLoading(true);
+    
+    try {
+      // TODO: Implement password reset endpoint in Django backend
+      toast.info("Password reset functionality coming soon. Please contact support.");
+      onOpenChange(false);
+      setResetEmail("");
+    } catch (error: any) {
+      toast.error(error.message || "An error occurred");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -59,7 +68,9 @@ export const ForgotPasswordDialog = ({ open, onOpenChange }: ForgotPasswordDialo
             </div>
           </div>
           <DialogFooter>
-            <Button type="submit">Send reset link</Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? "Sending..." : "Send reset link"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

@@ -2,71 +2,103 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { universities } from "@/components/login/StudentLoginForm";
+import { api } from "@/lib/api";
 
-// Demo credentials
-const demoStudentCredentials = {
-  email: "student@howard.edu",
-  password: "password123"
-};
-
-const demoAdminCredentials = {
-  email: "admin@mindease.com",
-  password: "admin123"
-};
-
-export const useAuthentication = (loginType: "student" | "admin") => {
+export const useAuthentication = (loginType: "student" | "admin" | "counselor") => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email || !password) {
-      toast.error("Please fill in all fields");
+    if (!email) {
+      toast.error("Please enter your email");
       return;
     }
     
-    // Demo authentication logic
-    if (loginType === "student") {
-      const universityDomain = email.split('@')[1];
-      const isValidUniversityEmail = universities.some(u => u.domain === universityDomain);
-      
-      if (!isValidUniversityEmail) {
-        toast.error(`Please use your university email address`);
-        return;
+    // If no password provided, use OTP login
+    if (!password) {
+      toast.error("Please enter your password or use OTP login");
+      return;
+    }
+    
+    setLoading(true);
+    
+    try {
+      // Validate university email for students - must be Howard University email
+      if (loginType === "student") {
+        const emailDomain = '@' + email.split('@')[1];
+        const allowedDomains = ['@howard.edu', '@bison.howard.edu'];
+        
+        if (!allowedDomains.includes(emailDomain)) {
+          toast.error(`Email must be from Howard University (@howard.edu or @bison.howard.edu)`);
+          setLoading(false);
+          return;
+        }
       }
       
-      if (email === demoStudentCredentials.email && password === demoStudentCredentials.password) {
-        localStorage.setItem("mindease_user", JSON.stringify({
-          type: "student",
-          name: "Sam Johnson",
-          university: "Howard University",
-          email: email,
-          username: "samjohnson"
-        }));
-        toast.success("Student login successful");
-        navigate("/");
-      } else {
-        toast.error("Invalid credentials. Try using: student@howard.edu / password123");
+      // Try password login with Django
+      try {
+        const response = await api.loginWithPassword(email, password);
+        
+        // Store tokens
+        if (response.access && response.refresh) {
+          localStorage.setItem('access_token', response.access);
+          localStorage.setItem('refresh_token', response.refresh);
+        }
+        
+        // Verify role matches login type
+        if (loginType === "student" && response.user?.role !== "student") {
+          toast.error("This account is not a student account");
+          setLoading(false);
+          return;
+        }
+        
+        if (loginType === "admin" && response.user?.role !== "admin") {
+          toast.error("This account is not an admin account");
+          setLoading(false);
+          return;
+        }
+        
+        if (loginType === "counselor" && response.user?.role !== "counselor") {
+          toast.error("This account is not a counselor account");
+          setLoading(false);
+          return;
+        }
+        
+        toast.success("Login successful!");
+        
+        // Reload page to refresh auth state
+        const redirectPath = response.user?.role === "admin" ? "/admin" : 
+                            response.user?.role === "counselor" ? "/counselor-dashboard" : "/";
+        window.location.href = redirectPath;
+      } catch (error: any) {
+        // Show the error message from backend
+        const errorMessage = error.message || "Invalid credentials";
+        
+        // If backend says account is OTP-only, show helpful message
+        if (errorMessage.includes("OTP only") || errorMessage.includes("Login with OTP Code")) {
+          toast.error(errorMessage, {
+            duration: 5000,
+            action: {
+              label: "Use OTP Login",
+              onClick: () => {
+                // Could trigger OTP login flow here if needed
+              }
+            }
+          });
+        } else {
+          toast.error(errorMessage);
+        }
+        setLoading(false);
       }
-    } else {
-      // Admin login
-      if (email === demoAdminCredentials.email && password === demoAdminCredentials.password) {
-        localStorage.setItem("mindease_user", JSON.stringify({
-          type: "admin",
-          name: "Admin User",
-          email: email,
-          username: "adminuser"
-        }));
-        toast.success("Admin login successful");
-        navigate("/");
-      } else {
-        toast.error("Invalid admin credentials. Try using: admin@mindease.com / admin123");
-      }
+    } catch (error: any) {
+      toast.error(error.message || "An error occurred during login");
+      setLoading(false);
     }
   };
   
-  return { email, setEmail, password, setPassword, handleLogin };
+  return { email, setEmail, password, setPassword, handleLogin, loading };
 };

@@ -10,18 +10,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-
-interface User {
-  type: "student" | "admin";
-  name: string;
-  university?: string;
-  email: string;
-  username?: string;
-}
+import { useAuth } from "@/hooks/useAuth";
+import { api } from "@/lib/api";
+import { useTheme } from "@/hooks/useTheme";
 
 const Settings = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [darkMode, setDarkMode] = useState(false);
+  const { user, refreshUser, loading: authLoading } = useAuth();
+  const { theme, setTheme } = useTheme();
   const [loading, setLoading] = useState(false);
   const [profileData, setProfileData] = useState({
     name: "",
@@ -43,32 +38,55 @@ const Settings = () => {
   });
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("mindease_user");
-    if (storedUser) {
-      const parsedUser = JSON.parse(storedUser);
-      setUser(parsedUser);
+    if (user) {
       setProfileData({
-        name: parsedUser.name || "",
-        email: parsedUser.email || "",
-        username: parsedUser.username || "",
+        name: user.name || "",
+        email: user.email || "",
+        username: user.username || "",
       });
     }
-  }, []);
+  }, [user]);
 
-  const handleProfileUpdate = (e: React.FormEvent) => {
+  const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      if (user) {
-        const updatedUser = { ...user, ...profileData };
-        localStorage.setItem("mindease_user", JSON.stringify(updatedUser));
-        setUser(updatedUser);
-        toast.success("Profile updated successfully");
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        toast.error("Not authenticated");
+        setLoading(false);
+        return;
       }
+
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+      const response = await fetch(`${API_BASE_URL}/auth/profile/update/`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: profileData.name,
+          username: profileData.username,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: 'Failed to update profile' }));
+        throw new Error(error.error || error.message || 'Failed to update profile');
+      }
+
+      toast.success("Profile updated successfully");
+      // Refresh user data
+      if (refreshUser) {
+        refreshUser();
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update profile");
+    } finally {
       setLoading(false);
-    }, 800);
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -89,6 +107,15 @@ const Settings = () => {
           <h1 className="text-2xl font-bold">Settings</h1>
         </div>
         
+        {authLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
+        ) : !user ? (
+          <div className="flex items-center justify-center py-12">
+            <p className="text-muted-foreground">Please sign in to access settings</p>
+          </div>
+        ) : (
         <Tabs defaultValue="profile" className="w-full">
           <TabsList className="grid grid-cols-3 mb-6">
             <TabsTrigger value="profile">Profile</TabsTrigger>
@@ -131,13 +158,11 @@ const Settings = () => {
                       type="email" 
                       value={profileData.email} 
                       onChange={handleInputChange}
-                      disabled={user?.type === "student"}
+                      disabled={true}
                     />
-                    {user?.type === "student" && (
-                      <p className="text-xs text-muted-foreground">
-                        Student email addresses cannot be changed
-                      </p>
-                    )}
+                    <p className="text-xs text-muted-foreground">
+                      Email addresses cannot be changed
+                    </p>
                   </div>
                   
                   <Button type="submit" disabled={loading}>
@@ -178,8 +203,11 @@ const Settings = () => {
                     </p>
                   </div>
                   <Switch 
-                    checked={darkMode} 
-                    onCheckedChange={setDarkMode} 
+                    checked={theme === "dark"} 
+                    onCheckedChange={(checked) => {
+                      setTheme(checked ? "dark" : "light");
+                      toast.success(`${checked ? "Dark" : "Light"} mode activated`);
+                    }} 
                   />
                 </div>
                 
@@ -314,6 +342,7 @@ const Settings = () => {
             </Card>
           </TabsContent>
         </Tabs>
+        )}
       </main>
       
       <Navigation />

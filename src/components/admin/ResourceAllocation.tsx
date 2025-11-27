@@ -1,13 +1,102 @@
-
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { api } from "@/lib/api";
 
-const ResourceAllocation = () => {
+interface ResourceAllocationProps {
+  timeFilter?: string;
+}
+
+interface Resource {
+  type: string;
+  description: string;
+  current: number;
+  recommended: number;
+  impact: string;
+  priority: string;
+}
+
+interface BudgetItem {
+  category: string;
+  percentage: number;
+  color: string;
+}
+
+interface HighImpactArea {
+  title: string;
+  description: string;
+  color: string;
+}
+
+const ResourceAllocation = ({ timeFilter = 'month' }: ResourceAllocationProps) => {
+  const [resources, setResources] = useState<Resource[]>([]);
+  const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([]);
+  const [highImpactAreas, setHighImpactAreas] = useState<HighImpactArea[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        const [resourcesData, budgetData, areasData] = await Promise.all([
+          api.getResourceAllocation(timeFilter).catch(() => []),
+          api.getBudgetOptimization(timeFilter).catch(() => []),
+          api.getHighImpactAreas(timeFilter).catch(() => [])
+        ]);
+
+        setResources(resourcesData || []);
+        setBudgetItems(budgetData || []);
+        setHighImpactAreas(areasData || []);
+      } catch (error) {
+        console.error("Error loading resource data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [timeFilter]);
+
   const handleAllocate = () => {
     toast.success("Resource allocation plan generated and ready for review");
+  };
+
+  const getPriorityBadge = (priority: string) => {
+    switch (priority.toLowerCase()) {
+      case 'urgent':
+        return <Badge variant="destructive">Urgent</Badge>;
+      case 'high':
+        return <Badge variant="secondary">High</Badge>;
+      case 'medium':
+        return <Badge>Medium</Badge>;
+      default:
+        return <Badge>Low</Badge>;
+    }
+  };
+
+  const getColorClass = (color: string) => {
+    const colorMap: Record<string, string> = {
+      'red': 'bg-red-500',
+      'green': 'bg-green-500',
+      'blue': 'bg-blue-500',
+      'purple': 'bg-purple-500',
+      'yellow': 'bg-yellow-500',
+      'amber': 'bg-amber-50 border-amber-200',
+    };
+    return colorMap[color] || 'bg-gray-500';
+  };
+
+  const getAreaBgColor = (color: string) => {
+    const colorMap: Record<string, string> = {
+      'amber': 'bg-amber-50 border-amber-200',
+      'blue': 'bg-blue-50 border-blue-200',
+      'green': 'bg-green-50 border-green-200',
+      'red': 'bg-red-50 border-red-200',
+    };
+    return colorMap[color] || 'bg-gray-50 border-gray-200';
   };
 
   return (
@@ -20,73 +109,53 @@ const ResourceAllocation = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Resource Type</TableHead>
-                <TableHead>Current Allocation</TableHead>
-                <TableHead>Recommended</TableHead>
-                <TableHead>Impact</TableHead>
-                <TableHead>Priority</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <TableRow>
-                <TableCell>
-                  <div className="font-medium">Crisis Counselors</div>
-                  <div className="text-sm text-muted-foreground">On-call mental health professionals</div>
-                </TableCell>
-                <TableCell>3</TableCell>
-                <TableCell className="text-green-600">5</TableCell>
-                <TableCell>High</TableCell>
-                <TableCell>
-                  <Badge variant="destructive">Urgent</Badge>
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>
-                  <div className="font-medium">Meditation Workshop</div>
-                  <div className="text-sm text-muted-foreground">Weekly guided sessions</div>
-                </TableCell>
-                <TableCell>1</TableCell>
-                <TableCell className="text-green-600">2</TableCell>
-                <TableCell>Medium</TableCell>
-                <TableCell>
-                  <Badge>Medium</Badge>
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>
-                  <div className="font-medium">Peer Support Training</div>
-                  <div className="text-sm text-muted-foreground">Certification program</div>
-                </TableCell>
-                <TableCell>2</TableCell>
-                <TableCell className="text-green-600">4</TableCell>
-                <TableCell>High</TableCell>
-                <TableCell>
-                  <Badge variant="secondary">High</Badge>
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>
-                  <div className="font-medium">CBT Specialists</div>
-                  <div className="text-sm text-muted-foreground">Therapists with CBT expertise</div>
-                </TableCell>
-                <TableCell>2</TableCell>
-                <TableCell className="text-green-600">3</TableCell>
-                <TableCell>Medium</TableCell>
-                <TableCell>
-                  <Badge>Medium</Badge>
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
+          {loading ? (
+            <div className="text-center py-8 text-muted-foreground">
+              Loading resource allocation data...
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Resource Type</TableHead>
+                  <TableHead>Current Allocation</TableHead>
+                  <TableHead>Recommended</TableHead>
+                  <TableHead>Impact</TableHead>
+                  <TableHead>Priority</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {resources.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                      No resource allocation data available. Recommendations will appear here once students start using the app.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  resources.map((resource, index) => (
+                    <TableRow key={index}>
+                      <TableCell>
+                        <div className="font-medium">{resource.type}</div>
+                        <div className="text-sm text-muted-foreground">{resource.description}</div>
+                      </TableCell>
+                      <TableCell>{resource.current}</TableCell>
+                      <TableCell className="text-green-600">{resource.recommended}</TableCell>
+                      <TableCell>{resource.impact}</TableCell>
+                      <TableCell>{getPriorityBadge(resource.priority)}</TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
         <CardFooter className="flex justify-between">
           <p className="text-sm text-muted-foreground">
-            Based on user data from the past 30 days
+            Based on user data from the selected time period
           </p>
-          <Button onClick={handleAllocate}>Generate Allocation Plan</Button>
+          <Button onClick={handleAllocate} disabled={loading || resources.length === 0}>
+            Generate Allocation Plan
+          </Button>
         </CardFooter>
       </Card>
       
@@ -99,57 +168,32 @@ const ResourceAllocation = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Crisis Response</span>
-                  <span className="text-sm text-muted-foreground">35%</span>
-                </div>
-                <div className="h-2 bg-muted rounded-full">
-                  <div className="h-full bg-red-500 rounded-full w-[35%]"></div>
-                </div>
+            {loading ? (
+              <div className="text-center py-8 text-muted-foreground">
+                Loading budget data...
               </div>
-              
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Preventative Resources</span>
-                  <span className="text-sm text-muted-foreground">25%</span>
-                </div>
-                <div className="h-2 bg-muted rounded-full">
-                  <div className="h-full bg-green-500 rounded-full w-[25%]"></div>
-                </div>
+            ) : budgetItems.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No budget optimization data available. Recommendations will appear here once students start using the app.
               </div>
-              
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Peer Support Programs</span>
-                  <span className="text-sm text-muted-foreground">20%</span>
-                </div>
-                <div className="h-2 bg-muted rounded-full">
-                  <div className="h-full bg-blue-500 rounded-full w-[20%]"></div>
-                </div>
+            ) : (
+              <div className="space-y-4">
+                {budgetItems.map((item, index) => (
+                  <div key={index} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">{item.category}</span>
+                      <span className="text-sm text-muted-foreground">{item.percentage}%</span>
+                    </div>
+                    <div className="h-2 bg-muted rounded-full">
+                      <div 
+                        className={`h-full ${getColorClass(item.color)} rounded-full`}
+                        style={{ width: `${item.percentage}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                ))}
               </div>
-              
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Educational Workshops</span>
-                  <span className="text-sm text-muted-foreground">15%</span>
-                </div>
-                <div className="h-2 bg-muted rounded-full">
-                  <div className="h-full bg-purple-500 rounded-full w-[15%]"></div>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Digital Resources</span>
-                  <span className="text-sm text-muted-foreground">5%</span>
-                </div>
-                <div className="h-2 bg-muted rounded-full">
-                  <div className="h-full bg-yellow-500 rounded-full w-[5%]"></div>
-                </div>
-              </div>
-            </div>
+            )}
           </CardContent>
         </Card>
         
@@ -161,28 +205,29 @@ const ResourceAllocation = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="p-4 border rounded-lg bg-amber-50 border-amber-200">
-                <h3 className="font-medium">Finals Week Support</h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Data shows 68% increase in anxiety during exam periods. Recommend temporary increase in counseling hours and drop-in sessions.
-                </p>
+            {loading ? (
+              <div className="text-center py-8 text-muted-foreground">
+                Loading high-impact areas...
               </div>
-              
-              <div className="p-4 border rounded-lg bg-blue-50 border-blue-200">
-                <h3 className="font-medium">Freshman Orientation Program</h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  First-year students show highest need for mental health resources. Recommend dedicated onboarding workshops.
-                </p>
+            ) : highImpactAreas.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No high-impact areas identified yet. Recommendations will appear here once student data is available.
               </div>
-              
-              <div className="p-4 border rounded-lg bg-green-50 border-green-200">
-                <h3 className="font-medium">International Student Support</h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  International students using app 30% less than domestic students. Recommend targeted outreach and culturally sensitive resources.
-                </p>
+            ) : (
+              <div className="space-y-4">
+                {highImpactAreas.map((area, index) => (
+                  <div 
+                    key={index} 
+                    className={`p-4 border rounded-lg ${getAreaBgColor(area.color)}`}
+                  >
+                    <h3 className="font-medium">{area.title}</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {area.description}
+                    </p>
+                  </div>
+                ))}
               </div>
-            </div>
+            )}
           </CardContent>
         </Card>
       </div>

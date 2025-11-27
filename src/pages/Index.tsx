@@ -11,72 +11,88 @@ import CrisisButton from "@/components/CrisisButton";
 import EngagementTracker from "@/components/EngagementTracker";
 import CBTExercises from "@/components/CBTExercises";
 import { Heart, Calendar, MessageSquare } from "lucide-react";
-
-interface User {
-  type: "student" | "admin";
-  name: string;
-  university?: string;
-  email: string;
-}
+import { useAuth } from "@/hooks/useAuth";
+import { api } from "@/lib/api";
 
 const Index = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<User | null>(null);
+  const { user, loading } = useAuth();
+  const [moodStats, setMoodStats] = useState({
+    averageMood: 0,
+    meditationCount: 0,
+    journalCount: 0,
+  });
   
   useEffect(() => {
-    const storedUser = localStorage.getItem("mindease_user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    } else {
-      // Uncomment this to force login before accessing the app
-      // navigate("/login");
+    if (user && user.role === "student") {
+      // Load mood stats
+      loadMoodStats();
     }
-  }, [navigate]);
+  }, [user]);
+  
+  const loadMoodStats = async () => {
+    try {
+      const stats = await api.getMoodStats(7);
+      if (stats.logs && stats.logs.length > 0) {
+        setMoodStats(prev => ({ ...prev, averageMood: Math.round(stats.average_mood) }));
+      }
+    } catch (error) {
+      console.error("Error loading mood stats:", error);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col pb-16">
       <Header />
       
       <main className="flex-1 px-4 py-6 space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">
-            {user ? `Welcome back, ${user.name.split(' ')[0]}` : 'Welcome to MindEase'}
-          </h1>
-        </div>
-        
-        {!user && (
-          <div className="p-4 bg-primary/10 rounded-lg mb-4">
-            <p>Please <a href="/login" className="text-primary font-medium">sign in</a> to access all features.</p>
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <p className="text-muted-foreground">Loading...</p>
           </div>
+        ) : (
+          <>
+            <div className="flex justify-between items-center">
+              <h1 className="text-2xl font-bold">
+                {user ? `Welcome back, ${user.name.split(' ')[0]}` : 'Welcome to MindEase'}
+              </h1>
+            </div>
+            
+            {!user && (
+              <div className="p-4 bg-primary/10 rounded-lg mb-4">
+                <p>Please <a href="/login" className="text-primary font-medium">sign in</a> to access all features.</p>
+              </div>
+            )}
+            
+            <DailyTip tip="Take a moment to breathe deeply when you feel overwhelmed. A few mindful breaths can help restore your sense of calm and focus." />
+            
+            <div className="grid grid-cols-3 gap-3">
+              <WellnessCard 
+                title="Mood Score"
+                value={moodStats.averageMood > 0 ? `${moodStats.averageMood}%` : "—"}
+                trend={moodStats.averageMood > 0 ? "neutral" : "neutral"}
+                trendValue={moodStats.averageMood > 0 ? "Last 7 days" : "No data yet"}
+                icon={<Heart size={20} />}
+              />
+              
+              <WellnessCard 
+                title="Meditations"
+                value={moodStats.meditationCount.toString()}
+                trend="neutral"
+                trendValue="This week"
+                icon={<Calendar size={20} />}
+              />
+              
+              <WellnessCard 
+                title="Journal Entries"
+                value={moodStats.journalCount.toString()}
+                trend="neutral"
+                trendValue="This week"
+                icon={<MessageSquare size={20} />}
+              />
+            </div>
+          </>
         )}
-        
-        <DailyTip tip="Take a moment to breathe deeply when you feel overwhelmed. A few mindful breaths can help restore your sense of calm and focus." />
-        
-        <div className="grid grid-cols-3 gap-3">
-          <WellnessCard 
-            title="Mood Score"
-            value="76%"
-            trend="up"
-            trendValue="5% from last week"
-            icon={<Heart size={20} />}
-          />
-          
-          <WellnessCard 
-            title="Meditations"
-            value="3"
-            trend="neutral"
-            trendValue="Same as last week"
-            icon={<Calendar size={20} />}
-          />
-          
-          <WellnessCard 
-            title="Journal Entries"
-            value="4"
-            trend="down"
-            trendValue="2 less than last week"
-            icon={<MessageSquare size={20} />}
-          />
-        </div>
         
         <MoodTracker />
         

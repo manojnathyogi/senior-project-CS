@@ -15,6 +15,7 @@ interface Exercise {
 }
 
 const CBTExercises = () => {
+  // Start with empty exercises for new users - data should come from backend
   const [exercises, setExercises] = useState<Exercise[]>([
     {
       id: "1",
@@ -38,7 +39,7 @@ const CBTExercises = () => {
       description: "Tense and relax different muscle groups to reduce physical tension.",
       category: "Stress",
       duration: "8 min",
-      completed: true,
+      completed: false, // Changed from true to false for new users
     },
   ]);
 
@@ -123,7 +124,13 @@ const CBTExercises = () => {
           </TabsContent>
           
           <TabsContent value="completed" className="space-y-3">
-            {exercises.filter(ex => ex.completed).map(exercise => (
+            {exercises.filter(ex => ex.completed).length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <p className="text-sm">No completed exercises yet.</p>
+                <p className="text-xs mt-1">Complete exercises to see them here!</p>
+              </div>
+            ) : (
+              exercises.filter(ex => ex.completed).map(exercise => (
               <div 
                 key={exercise.id}
                 className="p-3 border rounded-lg flex justify-between items-center"
@@ -146,7 +153,7 @@ const CBTExercises = () => {
                   Completed
                 </Button>
               </div>
-            ))}
+            )))}
           </TabsContent>
         </Tabs>
         

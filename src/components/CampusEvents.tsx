@@ -19,6 +19,7 @@ interface CampusEvent {
 }
 
 const CampusEvents = () => {
+  // Start with no registrations for new users - data should come from backend
   const [events, setEvents] = useState<CampusEvent[]>([
     {
       id: "1",
@@ -29,7 +30,7 @@ const CampusEvents = () => {
       location: "Student Health Center, Room 203",
       category: "Workshop",
       attendees: 24,
-      registered: false
+      registered: false // Changed from false (already correct)
     },
     {
       id: "2",
@@ -40,7 +41,7 @@ const CampusEvents = () => {
       location: "Wellness Center, Main Hall",
       category: "Group Session",
       attendees: 12,
-      registered: true
+      registered: false // Changed from true to false for new users
     },
     {
       id: "3",

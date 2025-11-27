@@ -1,25 +1,11 @@
 
-import { useEffect, useState } from "react";
 import Logo from "@/components/header/Logo";
 import UserMenu from "@/components/header/UserMenu";
 import ActionButtons from "@/components/header/ActionButtons";
-
-interface User {
-  type: "student" | "admin";
-  name: string;
-  university?: string;
-  email: string;
-}
+import { useAuth } from "@/hooks/useAuth";
 
 const Header = () => {
-  const [user, setUser] = useState<User | null>(null);
-  
-  useEffect(() => {
-    const storedUser = localStorage.getItem("mindease_user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-  }, []);
+  const { user } = useAuth();
   
   return (
     <header className="p-4 flex justify-between items-center">

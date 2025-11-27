@@ -1,44 +1,88 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { MessageSquare, Shield } from "lucide-react";
+import { MessageSquare } from "lucide-react";
+import { api } from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
 
 const CounselorLogin = () => {
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [verificationCode, setVerificationCode] = useState("");
   const [loading, setLoading] = useState(false);
   
-  const handleLogin = (e: React.FormEvent) => {
+  // Redirect if already logged in as counselor
+  useEffect(() => {
+    if (!authLoading && user?.role === "counselor") {
+      navigate("/counselor-dashboard", { replace: true });
+    }
+  }, [user, authLoading, navigate]);
+  
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!email || !password) {
+      toast.error("Please enter your email and password");
+      return;
+    }
+    
     setLoading(true);
     
-    // Demo login for counselors
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      // Login with Django API
+      const response = await api.loginWithPassword(email, password);
       
-      if (email.includes("counselor") && password === "counselor123") {
-        localStorage.setItem("mindease_user", JSON.stringify({
-          type: "counselor",
-          name: "Dr. Carter",
-          university: "Howard University",
-          email: email,
-        }));
-        
-        toast.success("Welcome back, Dr. Carter");
-        navigate("/counselor-dashboard");
-      } else {
-        toast.error("Invalid credentials. Please try again.");
+      // Store tokens
+      if (response.access && response.refresh) {
+        localStorage.setItem('access_token', response.access);
+        localStorage.setItem('refresh_token', response.refresh);
       }
-    }, 1500);
+      
+      // Verify role is counselor
+      if (response.user?.role !== "counselor") {
+        toast.error("This account is not a counselor account");
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        setLoading(false);
+        return;
+      }
+      
+      toast.success(`Welcome back, ${response.user.name || 'Counselor'}`);
+      
+      // Redirect to counselor dashboard - use window.location to force auth refresh
+      setTimeout(() => {
+        window.location.href = "/counselor-dashboard";
+      }, 500);
+    } catch (error: any) {
+      const errorMessage = error.message || "Invalid credentials";
+      
+      // Check if account is OTP-only
+      if (errorMessage.includes("OTP only") || errorMessage.includes("Login with OTP Code")) {
+        toast.error("This account uses OTP authentication. Please contact your administrator.");
+      } else {
+        toast.error(errorMessage);
+      }
+      setLoading(false);
+    }
   };
+  
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    );
+  }
+  
+  if (user?.role === "counselor") {
+    return null; // Will redirect via useEffect
+  }
   
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
@@ -82,28 +126,6 @@ const CounselorLogin = () => {
                   required
                 />
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="verification">Counselor Verification Code</Label>
-                <Input
-                  id="verification"
-                  placeholder="Enter verification code"
-                  value={verificationCode}
-                  onChange={(e) => setVerificationCode(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Your department administrator can provide this code
-                </p>
-              </div>
-              
-              <Alert className="bg-amber-50 text-amber-800 border-amber-200">
-                <div className="flex items-center gap-2">
-                  <Shield className="h-4 w-4" />
-                  <AlertDescription className="text-xs">
-                    Demo credentials: counselor@mindease.com / counselor123
-                  </AlertDescription>
-                </div>
-              </Alert>
             </CardContent>
             <CardFooter>
               <Button type="submit" className="w-full" disabled={loading}>

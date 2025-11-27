@@ -52,40 +52,10 @@ const chatRooms: ChatRoom[] = [
   },
 ];
 
-const dummyMessages: ChatMessage[] = [
-  {
-    id: "1",
-    text: "Has anyone tried meditation before exams? Does it help?",
-    sender: "Anonymous Owl",
-    time: "10:30 AM",
-    isCurrentUser: false,
-  },
-  {
-    id: "2",
-    text: "Yes! I do 5 min breathing exercises before tests. It really helps calm my nerves.",
-    sender: "Anonymous Fox",
-    time: "10:32 AM",
-    isCurrentUser: true,
-  },
-  {
-    id: "3",
-    text: "I find that taking short breaks during studying helps more than cramming non-stop. Anyone else?",
-    sender: "Anonymous Deer",
-    time: "10:35 AM",
-    isCurrentUser: false,
-  },
-  {
-    id: "4",
-    text: "Pomodoro technique works really well for me - 25 min study, 5 min break.",
-    sender: "Anonymous Rabbit",
-    time: "10:38 AM",
-    isCurrentUser: false,
-  },
-];
-
 const PeerSupport = () => {
   const [activeRoom, setActiveRoom] = useState<ChatRoom | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>(dummyMessages);
+  // Start with empty messages for new users - messages should come from backend
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
 
   const sendMessage = () => {
@@ -169,8 +139,15 @@ const PeerSupport = () => {
         </CardHeader>
         
         <CardContent className="flex-grow overflow-y-auto p-4">
-          <div className="space-y-4">
-            {messages.map((message) => (
+          {messages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+              <MessageSquare size={48} className="mb-4 opacity-50" />
+              <p className="text-lg font-medium">No messages yet</p>
+              <p className="text-sm">Be the first to start the conversation!</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {messages.map((message) => (
               <div
                 key={message.id}
                 className={`flex ${
@@ -196,7 +173,8 @@ const PeerSupport = () => {
                 </div>
               </div>
             ))}
-          </div>
+            </div>
+          )}
         </CardContent>
         
         <div className="p-4 border-t">

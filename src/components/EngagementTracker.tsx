@@ -12,24 +12,25 @@ interface EngagementMetric {
 }
 
 const EngagementTracker = () => {
+  // Start with zero values for new users - data should come from backend
   const metrics: EngagementMetric[] = [
     {
       title: "Weekly Engagement",
-      current: 75,
+      current: 0,
       target: 100,
       icon: Heart,
       color: "text-mindPurple",
     },
     {
       title: "Event Attendance",
-      current: 2,
+      current: 0,
       target: 5,
       icon: Calendar,
       color: "text-mindBlue",
     },
     {
       title: "Extra Credit Points",
-      current: 15,
+      current: 0,
       target: 50,
       icon: Award,
       color: "text-mindGreen",

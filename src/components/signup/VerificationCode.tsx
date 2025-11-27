@@ -7,22 +7,26 @@ import {
   InputOTPGroup, 
   InputOTPSlot 
 } from "@/components/ui/input-otp";
-import { useNavigate } from "react-router-dom";
-import { Mail, Check } from "lucide-react";
+import { Mail } from "lucide-react";
+import { api } from "@/lib/api";
 
 interface VerificationCodeProps {
   email: string;
   onVerify: () => void;
   onResend: () => void;
+  userData: {
+    name: string;
+    username?: string;
+    university?: string;
+    role?: string;
+    password: string; // Required - OTP is only for email verification
+  };
 }
 
-const VerificationCode = ({ email, onVerify, onResend }: VerificationCodeProps) => {
+const VerificationCode = ({ email, onVerify, onResend, userData }: VerificationCodeProps) => {
   const [verificationCode, setVerificationCode] = useState("");
   const [timeLeft, setTimeLeft] = useState(60);
-  const navigate = useNavigate();
-  
-  // Example verification code
-  const exampleCode = "123456";
+  const [loading, setLoading] = useState(false);
   
   useEffect(() => {
     if (timeLeft > 0) {
@@ -31,28 +35,39 @@ const VerificationCode = ({ email, onVerify, onResend }: VerificationCodeProps) 
     }
   }, [timeLeft]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Check against the example code
-    if (verificationCode === exampleCode) {
-      toast.success("Email verified successfully!");
-      onVerify();
-      // Redirect to landing page after verification
-      navigate('/');
-    } else {
-      toast.error("Invalid verification code, please try again");
+    if (verificationCode.length !== 6) {
+      toast.error("Please enter a 6-digit code");
+      return;
+    }
+    
+    setLoading(true);
+    
+    try {
+      // Verify the OTP code with Django backend
+      const response = await api.verifyOTPSignup(email, verificationCode, userData);
+      
+      // Store tokens in localStorage
+      if (response.access && response.refresh) {
+        localStorage.setItem('access_token', response.access);
+        localStorage.setItem('refresh_token', response.refresh);
+      }
+      
+      toast.success("Email verified successfully! Account created.");
+      // Redirect to home page to trigger auth refresh
+      window.location.href = "/";
+    } catch (error: any) {
+      toast.error(error.message || "Invalid verification code");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleResend = () => {
+  const handleResend = async () => {
     setTimeLeft(60);
-    toast.info("A new verification code has been sent to your email");
     onResend();
-  };
-
-  const fillExampleCode = () => {
-    setVerificationCode(exampleCode);
   };
 
   return (
@@ -64,23 +79,9 @@ const VerificationCode = ({ email, onVerify, onResend }: VerificationCodeProps) 
       </p>
 
       <div className="bg-muted p-4 rounded-lg mb-6 w-full max-w-xs">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Mail size={18} />
-            <span className="font-medium">Example Code:</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <code className="bg-background px-2 py-1 rounded font-mono">{exampleCode}</code>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={fillExampleCode} 
-              className="h-8 px-2"
-              title="Fill code automatically"
-            >
-              <Check size={16} />
-            </Button>
-          </div>
+        <div className="flex items-center gap-2">
+          <Mail size={18} />
+          <span className="text-sm">Check your email for the verification code</span>
         </div>
       </div>
 
@@ -90,21 +91,23 @@ const VerificationCode = ({ email, onVerify, onResend }: VerificationCodeProps) 
             maxLength={6} 
             value={verificationCode} 
             onChange={setVerificationCode}
-            render={({ slots }) => (
-              <InputOTPGroup>
-                {slots.map((slot, i) => (
-                  <InputOTPSlot key={i} index={i} />
-                ))}
-              </InputOTPGroup>
-            )}
-          />
+          >
+            <InputOTPGroup>
+              <InputOTPSlot index={0} />
+              <InputOTPSlot index={1} />
+              <InputOTPSlot index={2} />
+              <InputOTPSlot index={3} />
+              <InputOTPSlot index={4} />
+              <InputOTPSlot index={5} />
+            </InputOTPGroup>
+          </InputOTP>
 
           <Button 
             type="submit" 
-            disabled={verificationCode.length !== 6}
+            disabled={verificationCode.length !== 6 || loading}
             className="w-full mt-4"
           >
-            Verify Email
+            {loading ? "Verifying..." : "Verify Email"}
           </Button>
         </div>
       </form>

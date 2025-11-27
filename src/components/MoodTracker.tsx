@@ -6,10 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { api } from "@/lib/api";
 
 const MoodTracker = () => {
   const [moodValue, setMoodValue] = useState(50);
   const [moodNote, setMoodNote] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const getMoodEmoji = () => {
     if (moodValue < 30) return <Frown className="h-10 w-10 text-mindRed" />;
@@ -28,9 +30,34 @@ const MoodTracker = () => {
     return `linear-gradient(to right, #EB5757 0%, #F2C94C 50%, #6FCF97 100%)`;
   };
 
-  const handleSubmit = () => {
-    toast.success("Mood logged successfully!");
-    setMoodNote("");
+  // Simple sentiment analysis based on mood score
+  const getSentimentLabel = (score: number, text?: string): string => {
+    if (score < 30) return "negative";
+    if (score < 70) return "neutral";
+    return "positive";
+  };
+
+  const handleSubmit = async () => {
+    if (loading) return;
+    
+    setLoading(true);
+    
+    try {
+      const sentimentLabel = getSentimentLabel(moodValue, moodNote);
+      await api.createMoodLog(
+        moodValue,
+        moodNote || undefined,
+        sentimentLabel
+      );
+      
+      toast.success("Mood logged successfully!");
+      setMoodNote("");
+      setMoodValue(50);
+    } catch (error: any) {
+      toast.error(error.message || "An error occurred");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -76,8 +103,8 @@ const MoodTracker = () => {
           />
         </div>
         
-        <Button onClick={handleSubmit} className="w-full">
-          Log My Mood
+        <Button onClick={handleSubmit} className="w-full" disabled={loading}>
+          {loading ? "Logging..." : "Log My Mood"}
         </Button>
       </CardContent>
     </Card>

@@ -1,18 +1,18 @@
 """
 Health check endpoint for deployment monitoring
 """
-from django.http import JsonResponse
-from django.views.decorators.http import require_http_methods
-from django.views.decorators.csrf import csrf_exempt
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
 
 
-@csrf_exempt
-@require_http_methods(["GET", "HEAD"])
+@api_view(['GET', 'HEAD'])
+@permission_classes([AllowAny])
 def health_check(request):
     """
     Simple health check endpoint to verify backend is running.
     """
-    return JsonResponse({
+    return Response({
         'status': 'ok',
         'message': 'MindEase API is running',
         'version': '1.0.0'

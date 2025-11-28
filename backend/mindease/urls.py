@@ -7,6 +7,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from . import views
 
 urlpatterns = [
+    path('', views.health_check, name='root'),  # Root path handler
     path('admin/', admin.site.urls),
     path('api/health/', views.health_check, name='health_check'),
     path('api/', views.health_check, name='api_root'),  # Root API endpoint

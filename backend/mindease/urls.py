@@ -4,9 +4,12 @@ URL configuration for mindease project.
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from . import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/health/', views.health_check, name='health_check'),
+    path('api/', views.health_check, name='api_root'),  # Root API endpoint
     path('api/auth/', include('accounts.urls')),
     path('api/mood/', include('mood_tracking.urls')),
     path('api/journals/', include('journals.urls')),

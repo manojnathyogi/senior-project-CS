@@ -210,6 +210,10 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^https://.*\.railway\.app$",
 ]
 
+# Temporarily allow all origins for Render deployment (can restrict later)
+# This ensures CORS works even if frontend URL changes
+CORS_ALLOW_ALL_ORIGINS = True
+
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = [
     'accept',

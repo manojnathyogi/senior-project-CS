@@ -307,6 +307,7 @@ def delete_user(request, user_id=None):
 
 
 @api_view(['POST'])
+@api_view(['POST'])
 @permission_classes([permissions.AllowAny])
 def request_otp(request):
     """Request OTP for login/signup"""

@@ -311,24 +311,25 @@ def delete_user(request, user_id=None):
 @permission_classes([permissions.AllowAny])
 def request_otp(request):
     """Request OTP for login/signup"""
-    serializer = OTPRequestSerializer(data=request.data)
-    if serializer.is_valid():
-        email = serializer.validated_data['email']
-        purpose = serializer.validated_data.get('purpose', 'login')
-        
-        # Email validation is handled by serializer, but double-check here
-        email_domain = '@' + email.split('@')[1] if '@' in email else ''
-        allowed_domains = ['@bison.howard.edu', '@howard.edu']
-        if email_domain not in allowed_domains:
-            return Response({
-                'error': f'Email must be from Howard University. Allowed domains: {", ".join(allowed_domains)}'
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Clean up expired OTPs
-        OTP.cleanup_expired()
-        
-        # Generate OTP
-        otp_record, otp_code = OTP.generate_otp(email, purpose=purpose, expiry_minutes=10)
+    try:
+        serializer = OTPRequestSerializer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data['email']
+            purpose = serializer.validated_data.get('purpose', 'login')
+            
+            # Email validation is handled by serializer, but double-check here
+            email_domain = '@' + email.split('@')[1] if '@' in email else ''
+            allowed_domains = ['@bison.howard.edu', '@howard.edu']
+            if email_domain not in allowed_domains:
+                return Response({
+                    'error': f'Email must be from Howard University. Allowed domains: {", ".join(allowed_domains)}'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Clean up expired OTPs
+            OTP.cleanup_expired()
+            
+            # Generate OTP
+            otp_record, otp_code = OTP.generate_otp(email, purpose=purpose, expiry_minutes=10)
         
         # Send OTP via email
         try:
@@ -354,12 +355,23 @@ def request_otp(request):
             }, status=status.HTTP_200_OK)
         except Exception as e:
             # Delete OTP if email fails
-            otp_record.delete()
+            if otp_record:
+                otp_record.delete()
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to send OTP email to {email}: {str(e)}", exc_info=True)
             return Response({
-                'error': 'Failed to send OTP email. Please check your email configuration.'
+                'error': f'Failed to send OTP email: {str(e)}. Please check your email configuration.'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error in request_otp: {str(e)}", exc_info=True)
+        return Response({
+            'error': f'Server error: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['POST'])

@@ -307,7 +307,6 @@ def delete_user(request, user_id=None):
 
 
 @api_view(['POST'])
-@api_view(['POST'])
 @permission_classes([permissions.AllowAny])
 def request_otp(request):
     """Request OTP for login/signup"""
@@ -330,39 +329,39 @@ def request_otp(request):
             
             # Generate OTP
             otp_record, otp_code = OTP.generate_otp(email, purpose=purpose, expiry_minutes=10)
-        
-        # Send OTP via email
-        try:
-            subject = 'Your MindEase Verification Code'
-            if purpose == 'login':
-                message = f'Your login verification code is: {otp_code}\n\nThis code will expire in 10 minutes.\n\nIf you did not request this code, please ignore this email.'
-            elif purpose == 'signup':
-                message = f'Your signup verification code is: {otp_code}\n\nThis code will expire in 10 minutes.\n\nIf you did not request this code, please ignore this email.'
-            else:
-                message = f'Your verification code is: {otp_code}\n\nThis code will expire in 10 minutes.'
             
-            send_mail(
-                subject=subject,
-                message=message,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[email],
-                fail_silently=False,
-            )
-            
-            return Response({
-                'message': f'OTP sent to {email}',
-                'expires_in': 600  # 10 minutes in seconds
-            }, status=status.HTTP_200_OK)
-        except Exception as e:
-            # Delete OTP if email fails
-            if otp_record:
-                otp_record.delete()
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.error(f"Failed to send OTP email to {email}: {str(e)}", exc_info=True)
-            return Response({
-                'error': f'Failed to send OTP email: {str(e)}. Please check your email configuration.'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            # Send OTP via email
+            try:
+                subject = 'Your MindEase Verification Code'
+                if purpose == 'login':
+                    message = f'Your login verification code is: {otp_code}\n\nThis code will expire in 10 minutes.\n\nIf you did not request this code, please ignore this email.'
+                elif purpose == 'signup':
+                    message = f'Your signup verification code is: {otp_code}\n\nThis code will expire in 10 minutes.\n\nIf you did not request this code, please ignore this email.'
+                else:
+                    message = f'Your verification code is: {otp_code}\n\nThis code will expire in 10 minutes.'
+                
+                send_mail(
+                    subject=subject,
+                    message=message,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[email],
+                    fail_silently=False,
+                )
+                
+                return Response({
+                    'message': f'OTP sent to {email}',
+                    'expires_in': 600  # 10 minutes in seconds
+                }, status=status.HTTP_200_OK)
+            except Exception as e:
+                # Delete OTP if email fails
+                if otp_record:
+                    otp_record.delete()
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to send OTP email to {email}: {str(e)}", exc_info=True)
+                return Response({
+                    'error': f'Failed to send OTP email: {str(e)}. Please check your email configuration.'
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:

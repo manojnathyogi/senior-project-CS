@@ -192,6 +192,7 @@ SIMPLE_JWT = {
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:8080",
     "http://127.0.0.1:8080",
+    "https://mindease-frontend.onrender.com",
 ]
 
 # Allow Railway/Render frontend URL (will be set via environment variable)
@@ -202,23 +203,25 @@ if FRONTEND_URL_FROM_ENV:
     if frontend_url_clean and frontend_url_clean not in CORS_ALLOWED_ORIGINS:
         CORS_ALLOWED_ORIGINS.append(frontend_url_clean)
 
-# Allow Render frontend origins
-CORS_ALLOWED_ORIGINS.extend([
-    "https://mindease-frontend.onrender.com",
-    "https://*.onrender.com",
-])
-
-# For production, allow specific Render origins
-if not DEBUG:
-    CORS_ALLOW_ALL_ORIGINS = False
-    # Ensure we have the frontend URL
-    if 'https://mindease-frontend.onrender.com' not in CORS_ALLOWED_ORIGINS:
-        CORS_ALLOWED_ORIGINS.append('https://mindease-frontend.onrender.com')
-else:
-    # In development, allow all origins
-    CORS_ALLOW_ALL_ORIGINS = True
+# For Render, allow all onrender.com origins in production
+# This is safer than CORS_ALLOW_ALL_ORIGINS but works for Render's dynamic URLs
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://.*\.onrender\.com$",
+    r"^https://.*\.railway\.app$",
+]
 
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
 
 # CSRF and Security Settings for Render
 CSRF_TRUSTED_ORIGINS = [

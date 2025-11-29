@@ -324,11 +324,28 @@ def request_otp(request):
                     'error': f'Email must be from Howard University. Allowed domains: {", ".join(allowed_domains)}'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
-            # Clean up expired OTPs
-            OTP.cleanup_expired()
+            # Clean up expired OTPs (handle if table doesn't exist yet)
+            try:
+                OTP.cleanup_expired()
+            except Exception as cleanup_error:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Could not cleanup expired OTPs (migrations may not have run): {str(cleanup_error)}")
             
             # Generate OTP
-            otp_record, otp_code = OTP.generate_otp(email, purpose=purpose, expiry_minutes=10)
+            try:
+                otp_record, otp_code = OTP.generate_otp(email, purpose=purpose, expiry_minutes=10)
+            except Exception as otp_error:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to generate OTP: {str(otp_error)}", exc_info=True)
+                # Check if it's a database table error
+                if 'does not exist' in str(otp_error) or 'relation' in str(otp_error).lower():
+                    return Response({
+                        'error': 'Database migrations have not been run. Please contact the administrator.',
+                        'details': str(otp_error)
+                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                raise  # Re-raise if it's a different error
             
             # Send OTP via email
             try:

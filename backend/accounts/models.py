@@ -70,7 +70,7 @@ class OTP(models.Model):
     """One-Time Password for email-based authentication"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField()
-    otp_code = models.CharField(max_length=6)  # Stored as hash
+    otp_code = models.CharField(max_length=64)  # Stored as SHA256 hash (64 chars)
     purpose = models.CharField(
         max_length=20,
         choices=[

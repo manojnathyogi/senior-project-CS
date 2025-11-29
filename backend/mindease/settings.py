@@ -194,21 +194,36 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:8080",
 ]
 
-# Allow Railway frontend URL (will be set via environment variable)
+# Allow Railway/Render frontend URL (will be set via environment variable)
 FRONTEND_URL_FROM_ENV = config('FRONTEND_URL', default='')
-if FRONTEND_URL_FROM_ENV and FRONTEND_URL_FROM_ENV not in CORS_ALLOWED_ORIGINS:
-    CORS_ALLOWED_ORIGINS.append(FRONTEND_URL_FROM_ENV)
+if FRONTEND_URL_FROM_ENV:
+    # Remove trailing slash if present
+    frontend_url_clean = FRONTEND_URL_FROM_ENV.rstrip('/')
+    if frontend_url_clean and frontend_url_clean not in CORS_ALLOWED_ORIGINS:
+        CORS_ALLOWED_ORIGINS.append(frontend_url_clean)
 
-# Allow all origins in development (for Railway preview deployments)
-if DEBUG:
-    CORS_ALLOW_ALL_ORIGINS = True
-else:
+# Allow Render frontend origins
+CORS_ALLOWED_ORIGINS.extend([
+    "https://mindease-frontend.onrender.com",
+    "https://*.onrender.com",
+])
+
+# For production, allow specific Render origins
+if not DEBUG:
     CORS_ALLOW_ALL_ORIGINS = False
+    # Ensure we have the frontend URL
+    if 'https://mindease-frontend.onrender.com' not in CORS_ALLOWED_ORIGINS:
+        CORS_ALLOWED_ORIGINS.append('https://mindease-frontend.onrender.com')
+else:
+    # In development, allow all origins
+    CORS_ALLOW_ALL_ORIGINS = True
 
 CORS_ALLOW_CREDENTIALS = True
 
 # CSRF and Security Settings for Render
 CSRF_TRUSTED_ORIGINS = [
+    'https://mindease-frontend.onrender.com',
+    'https://mindease-backend-260x.onrender.com',
     'https://*.onrender.com',
     'https://*.railway.app',
 ]

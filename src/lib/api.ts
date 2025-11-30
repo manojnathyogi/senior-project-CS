@@ -1,5 +1,7 @@
 // API configuration for Django backend
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+// Normalize API_BASE_URL to remove trailing slashes to prevent double slashes in URLs
+const rawApiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+const API_BASE_URL = rawApiUrl.replace(/\/+$/, ''); // Remove trailing slashes
 
 // Log API URL in development (helps debug production issues)
 if (import.meta.env.DEV) {

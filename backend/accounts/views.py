@@ -7,8 +7,11 @@ from django.utils import timezone
 from django.core.mail import send_mail
 from django.conf import settings
 from django.template.loader import render_to_string
+from decouple import config
 import secrets
 import hashlib
+import requests
+import json
 
 from .models import User, OTP
 from .serializers import UserSerializer, UserRegistrationSerializer, PasswordResetSerializer, PasswordResetConfirmSerializer, OTPRequestSerializer, OTPVerifySerializer
@@ -347,7 +350,7 @@ def request_otp(request):
                     }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
                 raise  # Re-raise if it's a different error
             
-            # Send OTP via email (with timeout protection)
+            # Send OTP via email using Resend API (works on Render free tier)
             import logging
             logger = logging.getLogger(__name__)
             
@@ -360,20 +363,51 @@ def request_otp(request):
                 else:
                     message = f'Your verification code is: {otp_code}\n\nThis code will expire in 10 minutes.'
                 
-                # Log email configuration (without password)
-                logger.info(f"Attempting to send OTP email to {email} from {settings.DEFAULT_FROM_EMAIL}")
-                logger.info(f"Email host: {settings.EMAIL_HOST}:{settings.EMAIL_PORT}, TLS: {settings.EMAIL_USE_TLS}")
+                # Try Resend API first (works on Render free tier)
+                resend_api_key = config('RESEND_API_KEY', default=None)
+                if resend_api_key:
+                    try:
+                        resend_url = 'https://api.resend.com/emails'
+                        headers = {
+                            'Authorization': f'Bearer {resend_api_key}',
+                            'Content-Type': 'application/json'
+                        }
+                        payload = {
+                            'from': settings.DEFAULT_FROM_EMAIL,
+                            'to': [email],
+                            'subject': subject,
+                            'text': message
+                        }
+                        
+                        response = requests.post(resend_url, headers=headers, json=payload, timeout=10)
+                        if response.status_code == 200:
+                            logger.info(f"Email sent successfully via Resend to {email}")
+                            return Response({
+                                'message': f'OTP sent to {email}',
+                                'expires_in': 600  # 10 minutes in seconds
+                            }, status=status.HTTP_200_OK)
+                        else:
+                            logger.error(f"Resend API error: {response.status_code} - {response.text}")
+                            raise Exception(f"Resend API returned {response.status_code}: {response.text}")
+                    except Exception as resend_error:
+                        logger.error(f"Resend API error: {str(resend_error)}")
+                        # Fall through to SMTP if Resend fails
                 
-                # Try sending email with explicit error handling
+                # Fallback to SMTP (may not work on Render free tier)
+                logger.info(f"Attempting to send OTP email via SMTP to {email} from {settings.DEFAULT_FROM_EMAIL}")
                 try:
                     email_sent = send_mail(
                         subject=subject,
                         message=message,
                         from_email=settings.DEFAULT_FROM_EMAIL,
                         recipient_list=[email],
-                        fail_silently=False,  # Changed back to False to see actual errors
+                        fail_silently=False,
                     )
-                    logger.info(f"Email sent successfully to {email}")
+                    logger.info(f"Email sent successfully via SMTP to {email}")
+                    return Response({
+                        'message': f'OTP sent to {email}',
+                        'expires_in': 600  # 10 minutes in seconds
+                    }, status=status.HTTP_200_OK)
                 except Exception as email_error:
                     # Log the actual email error
                     logger.error(f"SMTP error sending email to {email}: {str(email_error)}", exc_info=True)
@@ -383,20 +417,7 @@ def request_otp(request):
                     return Response({
                         'error': f'Failed to send OTP email: {str(email_error)}. Please check your email configuration.'
                     }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                
-                if not email_sent:
-                    # Email failed to send (shouldn't happen with fail_silently=False, but check anyway)
-                    if otp_record:
-                        otp_record.delete()
-                    logger.error(f"Email backend returned False for {email}")
-                    return Response({
-                        'error': 'Failed to send OTP email. Please check your email configuration or try again later.'
-                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                
-                return Response({
-                    'message': f'OTP sent to {email}',
-                    'expires_in': 600  # 10 minutes in seconds
-                }, status=status.HTTP_200_OK)
+                    
             except Exception as e:
                 # Delete OTP if email fails
                 if otp_record:

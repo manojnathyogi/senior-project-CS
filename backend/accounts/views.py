@@ -391,8 +391,19 @@ def request_otp(request):
                                 'expires_in': 600  # 10 minutes in seconds
                             }, status=status.HTTP_200_OK)
                         else:
-                            logger.error(f"Resend API error: {response.status_code} - {response.text}")
-                            raise Exception(f"Resend API returned {response.status_code}: {response.text}")
+                            error_data = response.json() if response.text else {}
+                            error_message = error_data.get('message', response.text)
+                            logger.error(f"Resend API error: {response.status_code} - {error_message}")
+                            
+                            # If domain not verified, provide helpful error message
+                            if response.status_code == 403 and 'domain' in error_message.lower():
+                                if otp_record:
+                                    otp_record.delete()
+                                return Response({
+                                    'error': 'Email service requires domain verification. Please contact support or verify your domain in Resend.'
+                                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                            
+                            raise Exception(f"Resend API returned {response.status_code}: {error_message}")
                     except Exception as resend_error:
                         logger.error(f"Resend API error: {str(resend_error)}")
                         # Fall through to SMTP if Resend fails

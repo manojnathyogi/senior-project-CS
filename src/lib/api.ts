@@ -1,22 +1,40 @@
 // API configuration for Django backend
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
+// Log API URL in development (helps debug production issues)
+if (import.meta.env.DEV) {
+  console.log('API Base URL:', API_BASE_URL);
+}
+
 export const api = {
   async requestOTP(email: string, purpose: 'login' | 'signup' | 'password_reset' = 'signup') {
-    const response = await fetch(`${API_BASE_URL}/auth/otp/request/`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, purpose }),
-    });
+    const url = `${API_BASE_URL}/auth/otp/request/`;
+    console.log('Requesting OTP from:', url);
+    
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, purpose }),
+      });
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Failed to request OTP' }));
-      throw new Error(error.error || error.message || 'Failed to request OTP');
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: 'Failed to request OTP' }));
+        console.error('OTP request failed:', response.status, error);
+        throw new Error(error.error || error.message || `Failed to request OTP (${response.status})`);
+      }
+
+      return response.json();
+    } catch (error: any) {
+      // Handle network errors
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        console.error('Network error - backend may be down or CORS misconfigured');
+        throw new Error('Cannot connect to server. Please check your connection and try again.');
+      }
+      throw error;
     }
-
-    return response.json();
   },
 
   async verifyOTPSignup(email: string, otpCode: string, userData: {

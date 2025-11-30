@@ -116,11 +116,19 @@ const SignUp = () => {
     
     try {
       // Request OTP from Django backend (this will send verification email)
-      await api.requestOTP(formData.email, 'signup');
+      console.log('Requesting OTP for:', formData.email);
+      const response = await api.requestOTP(formData.email, 'signup');
+      console.log('OTP request response:', response);
       toast.success(`Verification code sent to ${formData.email}`);
       setStep(2);
     } catch (error: any) {
-      toast.error(error.message || "Failed to send verification code");
+      console.error('OTP request error:', error);
+      const errorMessage = error.message || "Failed to send verification code";
+      toast.error(errorMessage);
+      // Show more details in console for debugging
+      if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
+        console.error('Network error - check if backend is running and CORS is configured');
+      }
     } finally {
       setLoading(false);
     }

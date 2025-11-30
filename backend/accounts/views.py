@@ -363,50 +363,46 @@ def request_otp(request):
                 else:
                     message = f'Your verification code is: {otp_code}\n\nThis code will expire in 10 minutes.'
                 
-                # Try Resend API first (works on Render free tier)
+                # Try SendGrid API first (works on Render free tier, no domain verification needed)
                 # Try both config() and os.environ for better compatibility
                 import os
-                resend_api_key = config('RESEND_API_KEY', default=None) or os.environ.get('RESEND_API_KEY')
-                logger.info(f"Resend API key present: {bool(resend_api_key)}")
+                sendgrid_api_key = config('SENDGRID_API_KEY', default=None) or os.environ.get('SENDGRID_API_KEY')
+                logger.info(f"SendGrid API key present: {bool(sendgrid_api_key)}")
                 
-                if resend_api_key:
+                if sendgrid_api_key:
                     try:
-                        resend_url = 'https://api.resend.com/emails'
+                        sendgrid_url = 'https://api.sendgrid.com/v3/mail/send'
                         headers = {
-                            'Authorization': f'Bearer {resend_api_key}',
+                            'Authorization': f'Bearer {sendgrid_api_key}',
                             'Content-Type': 'application/json'
                         }
                         payload = {
-                            'from': settings.DEFAULT_FROM_EMAIL,
-                            'to': [email],
-                            'subject': subject,
-                            'text': message
+                            'personalizations': [{
+                                'to': [{'email': email}],
+                                'subject': subject
+                            }],
+                            'from': {'email': settings.DEFAULT_FROM_EMAIL},
+                            'content': [{
+                                'type': 'text/plain',
+                                'value': message
+                            }]
                         }
                         
-                        response = requests.post(resend_url, headers=headers, json=payload, timeout=10)
-                        if response.status_code == 200:
-                            logger.info(f"Email sent successfully via Resend to {email}")
+                        response = requests.post(sendgrid_url, headers=headers, json=payload, timeout=10)
+                        if response.status_code == 202:  # SendGrid returns 202 Accepted
+                            logger.info(f"Email sent successfully via SendGrid to {email}")
                             return Response({
                                 'message': f'OTP sent to {email}',
                                 'expires_in': 600  # 10 minutes in seconds
                             }, status=status.HTTP_200_OK)
                         else:
                             error_data = response.json() if response.text else {}
-                            error_message = error_data.get('message', response.text)
-                            logger.error(f"Resend API error: {response.status_code} - {error_message}")
-                            
-                            # If domain not verified, provide helpful error message
-                            if response.status_code == 403 and 'domain' in error_message.lower():
-                                if otp_record:
-                                    otp_record.delete()
-                                return Response({
-                                    'error': 'Email service requires domain verification. Please contact support or verify your domain in Resend.'
-                                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                            
-                            raise Exception(f"Resend API returned {response.status_code}: {error_message}")
-                    except Exception as resend_error:
-                        logger.error(f"Resend API error: {str(resend_error)}")
-                        # Fall through to SMTP if Resend fails
+                            error_message = error_data.get('errors', [{}])[0].get('message', response.text) if isinstance(error_data.get('errors'), list) else response.text
+                            logger.error(f"SendGrid API error: {response.status_code} - {error_message}")
+                            raise Exception(f"SendGrid API returned {response.status_code}: {error_message}")
+                    except Exception as sendgrid_error:
+                        logger.error(f"SendGrid API error: {str(sendgrid_error)}")
+                        # Fall through to SMTP if SendGrid fails
                 
                 # Fallback to SMTP (may not work on Render free tier)
                 logger.info(f"Attempting to send OTP email via SMTP to {email} from {settings.DEFAULT_FROM_EMAIL}")

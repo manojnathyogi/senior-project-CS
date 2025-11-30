@@ -347,7 +347,7 @@ def request_otp(request):
                     }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
                 raise  # Re-raise if it's a different error
             
-            # Send OTP via email
+            # Send OTP via email (with timeout protection)
             try:
                 subject = 'Your MindEase Verification Code'
                 if purpose == 'login':
@@ -357,13 +357,25 @@ def request_otp(request):
                 else:
                     message = f'Your verification code is: {otp_code}\n\nThis code will expire in 10 minutes.'
                 
-                send_mail(
+                # Use fail_silently=True to prevent hanging, then check result
+                email_sent = send_mail(
                     subject=subject,
                     message=message,
                     from_email=settings.DEFAULT_FROM_EMAIL,
                     recipient_list=[email],
-                    fail_silently=False,
+                    fail_silently=True,  # Changed to True to prevent hanging
                 )
+                
+                if not email_sent:
+                    # Email failed to send
+                    if otp_record:
+                        otp_record.delete()
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.error(f"Failed to send OTP email to {email} - email backend returned False")
+                    return Response({
+                        'error': 'Failed to send OTP email. Please check your email configuration or try again later.'
+                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
                 
                 return Response({
                     'message': f'OTP sent to {email}',

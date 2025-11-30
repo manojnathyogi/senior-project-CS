@@ -246,6 +246,8 @@ EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
 EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@mindease.com')
+# Email timeout settings to prevent worker timeouts
+EMAIL_TIMEOUT = 10  # 10 seconds timeout for email sending
 
 # SSL Certificate fix for macOS
 import ssl

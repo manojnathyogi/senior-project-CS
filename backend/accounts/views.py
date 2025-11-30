@@ -364,7 +364,11 @@ def request_otp(request):
                     message = f'Your verification code is: {otp_code}\n\nThis code will expire in 10 minutes.'
                 
                 # Try Resend API first (works on Render free tier)
-                resend_api_key = config('RESEND_API_KEY', default=None)
+                # Try both config() and os.environ for better compatibility
+                import os
+                resend_api_key = config('RESEND_API_KEY', default=None) or os.environ.get('RESEND_API_KEY')
+                logger.info(f"Resend API key present: {bool(resend_api_key)}")
+                
                 if resend_api_key:
                     try:
                         resend_url = 'https://api.resend.com/emails'

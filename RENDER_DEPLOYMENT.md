@@ -15,7 +15,7 @@ Render is the best free alternative to Railway. Follow these steps to deploy eve
 
 1. Render account: [render.com](https://render.com)
 2. GitHub repository connected
-3. Gmail App Password (for email OTP)
+3. SendGrid account (free tier: 100 emails/day) - [sendgrid.com](https://sendgrid.com)
 
 ---
 
@@ -87,13 +87,15 @@ In the backend service, go to **"Environment"** tab and add:
 - `ALLOWED_HOSTS` = `your-backend-name.onrender.com,*.onrender.com`
 - `FRONTEND_URL` = `https://your-frontend-name.onrender.com` (update after frontend deploy)
 
-**Email Configuration:**
-- `EMAIL_HOST` = `smtp.gmail.com`
-- `EMAIL_PORT` = `587`
-- `EMAIL_USE_TLS` = `True`
-- `EMAIL_HOST_USER` = `your-email@gmail.com`
-- `EMAIL_HOST_PASSWORD` = `your-gmail-app-password`
-- `DEFAULT_FROM_EMAIL` = `noreply@mindease.com`
+**Email Configuration (SendGrid - Recommended):**
+- `SENDGRID_API_KEY` = Your SendGrid API key (get from https://app.sendgrid.com/settings/api_keys)
+- `DEFAULT_FROM_EMAIL` = Your verified email address in SendGrid (e.g., `your-email@gmail.com`)
+
+**Note:** SendGrid is recommended because Render's free tier blocks SMTP connections. To verify a sender:
+1. Go to SendGrid → Settings → Sender Authentication → Single Sender Verification
+2. Add your email address
+3. Verify via the confirmation email
+4. Use the verified email as `DEFAULT_FROM_EMAIL`
 
 ### 3c. Deploy Backend
 
@@ -258,12 +260,10 @@ SECRET_KEY=<your-secret-key>
 DEBUG=False
 ALLOWED_HOSTS=your-backend-name.onrender.com,*.onrender.com
 FRONTEND_URL=https://your-frontend-name.onrender.com
-EMAIL_HOST=smtp.gmail.com
-EMAIL_PORT=587
-EMAIL_USE_TLS=True
-EMAIL_HOST_USER=your-email@gmail.com
-EMAIL_HOST_PASSWORD=your-gmail-app-password
-DEFAULT_FROM_EMAIL=noreply@mindease.com
+SENDGRID_API_KEY=<your-sendgrid-api-key>
+DEFAULT_FROM_EMAIL=<your-verified-email@example.com>
+ADMIN_EMAIL=<admin-email@example.com>  # Optional: auto-create admin
+ADMIN_PASSWORD=<admin-password>  # Optional: auto-create admin
 ```
 
 ### Frontend Service:

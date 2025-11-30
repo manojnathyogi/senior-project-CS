@@ -49,7 +49,7 @@ MindEase is a comprehensive mental health support platform designed for universi
 - **Python** (v3.11 or higher)
 - **pip** (Python package manager)
 - **PostgreSQL** (optional, for production)
-- **Gmail Account** (for email OTP functionality)
+- **SendGrid Account** (for email OTP functionality - free tier available)
 
 ## Installation
 
@@ -131,17 +131,34 @@ DB_PASSWORD=postgres
 DB_HOST=localhost
 DB_PORT=5432
 
-# Email Configuration (Gmail SMTP)
+# Email Configuration (SendGrid API - Recommended for production)
+SENDGRID_API_KEY=your-sendgrid-api-key  # Get from https://app.sendgrid.com/settings/api_keys
+DEFAULT_FROM_EMAIL=your-verified-email@example.com  # Must be verified in SendGrid
+
+# Alternative: Gmail SMTP (for local development only)
+# Note: SMTP may not work on free hosting tiers (e.g., Render free tier)
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
 EMAIL_USE_TLS=True
 EMAIL_HOST_USER=your-email@gmail.com
 EMAIL_HOST_PASSWORD=your-app-password  # Gmail App Password
-DEFAULT_FROM_EMAIL=noreply@mindease.com
+
 FRONTEND_URL=http://localhost:8080
 ```
 
-### Gmail App Password Setup
+### SendGrid Setup (Recommended)
+
+1. Sign up at [sendgrid.com](https://sendgrid.com) (free tier: 100 emails/day)
+2. Go to Settings → API Keys
+3. Create a new API key with "Full Access" or "Mail Send" permission
+4. Copy the API key (starts with `SG.`)
+5. Verify a sender email:
+   - Go to Settings → Sender Authentication → Single Sender Verification
+   - Add your email address (e.g., `your-email@gmail.com`)
+   - Verify the email via the confirmation link sent to your inbox
+6. Use the verified email as `DEFAULT_FROM_EMAIL`
+
+### Gmail App Password Setup (Local Development Only)
 
 1. Go to your Google Account settings
 2. Enable 2-Step Verification
@@ -313,9 +330,22 @@ npm run test  # If test setup exists
 
 ## Deployment
 
-### Railway Deployment
+The application is currently deployed on **Render**. See `RENDER_DEPLOYMENT.md` for complete deployment instructions.
 
-Railway is a cloud platform that can deploy both frontend and backend services. Follow these steps:
+### Quick Deployment Summary
+
+**Backend:** Deployed as a Web Service on Render
+- Uses PostgreSQL database
+- Configured with SendGrid for email sending
+- Auto-deploys from GitHub
+
+**Frontend:** Deployed as a Static Site on Render
+- Configured with SPA routing support
+- Connects to backend API
+
+### Alternative: Railway Deployment
+
+Railway is another cloud platform option. See `RAILWAY_DEPLOYMENT.md` for detailed instructions:
 
 #### Prerequisites
 
@@ -349,7 +379,13 @@ USE_SQLITE=False
 FRONTEND_URL=https://your-frontend-url.railway.app
 ```
 
-**Email Configuration:**
+**Email Configuration (SendGrid - Recommended):**
+```
+SENDGRID_API_KEY=your-sendgrid-api-key
+DEFAULT_FROM_EMAIL=your-verified-email@example.com
+```
+
+**Email Configuration (Gmail SMTP - Alternative):**
 ```
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
@@ -421,9 +457,10 @@ Or use Railway's web terminal in the service dashboard.
 ## Development Notes
 
 - **Database**: SQLite is used by default for development. Switch to PostgreSQL for production.
-- **Email**: Gmail SMTP is configured. Ensure app password is set correctly.
-- **CORS**: CORS is enabled for localhost:8080. Update for production domains.
-- **JWT Tokens**: Access tokens expire in 15 minutes, refresh tokens in 7 days.
+- **Email**: SendGrid API is used in production (works on free hosting tiers). Gmail SMTP can be used for local development.
+- **CORS**: CORS is enabled for localhost:8080 and production domains. Configured for Render deployment.
+- **JWT Tokens**: Access tokens expire in 1 hour, refresh tokens in 7 days.
+- **Deployment**: Currently deployed on Render. See `RENDER_DEPLOYMENT.md` for deployment instructions.
 
 ## Contributing
 

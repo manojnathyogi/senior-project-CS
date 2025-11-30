@@ -114,39 +114,39 @@ const ResourceAllocation = ({ timeFilter = 'month' }: ResourceAllocationProps) =
               Loading resource allocation data...
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Resource Type</TableHead>
-                  <TableHead>Current Allocation</TableHead>
-                  <TableHead>Recommended</TableHead>
-                  <TableHead>Impact</TableHead>
-                  <TableHead>Priority</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Resource Type</TableHead>
+                <TableHead>Current Allocation</TableHead>
+                <TableHead>Recommended</TableHead>
+                <TableHead>Impact</TableHead>
+                <TableHead>Priority</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
                 {resources.length === 0 ? (
-                  <TableRow>
+              <TableRow>
                     <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                       No resource allocation data available. Recommendations will appear here once students start using the app.
-                    </TableCell>
-                  </TableRow>
+                </TableCell>
+              </TableRow>
                 ) : (
                   resources.map((resource, index) => (
                     <TableRow key={index}>
-                      <TableCell>
+                <TableCell>
                         <div className="font-medium">{resource.type}</div>
                         <div className="text-sm text-muted-foreground">{resource.description}</div>
-                      </TableCell>
+                </TableCell>
                       <TableCell>{resource.current}</TableCell>
                       <TableCell className="text-green-600">{resource.recommended}</TableCell>
                       <TableCell>{resource.impact}</TableCell>
                       <TableCell>{getPriorityBadge(resource.priority)}</TableCell>
-                    </TableRow>
+              </TableRow>
                   ))
                 )}
-              </TableBody>
-            </Table>
+            </TableBody>
+          </Table>
           )}
         </CardContent>
         <CardFooter className="flex justify-between">
@@ -180,17 +180,17 @@ const ResourceAllocation = ({ timeFilter = 'month' }: ResourceAllocationProps) =
               <div className="space-y-4">
                 {budgetItems.map((item, index) => (
                   <div key={index} className="space-y-2">
-                    <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between">
                       <span className="text-sm font-medium">{item.category}</span>
                       <span className="text-sm text-muted-foreground">{item.percentage}%</span>
-                    </div>
-                    <div className="h-2 bg-muted rounded-full">
+                </div>
+                <div className="h-2 bg-muted rounded-full">
                       <div 
                         className={`h-full ${getColorClass(item.color)} rounded-full`}
                         style={{ width: `${item.percentage}%` }}
                       ></div>
-                    </div>
-                  </div>
+                </div>
+              </div>
                 ))}
               </div>
             )}
@@ -221,9 +221,9 @@ const ResourceAllocation = ({ timeFilter = 'month' }: ResourceAllocationProps) =
                     className={`p-4 border rounded-lg ${getAreaBgColor(area.color)}`}
                   >
                     <h3 className="font-medium">{area.title}</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                       {area.description}
-                    </p>
+                </p>
                   </div>
                 ))}
               </div>

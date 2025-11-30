@@ -348,6 +348,9 @@ def request_otp(request):
                 raise  # Re-raise if it's a different error
             
             # Send OTP via email (with timeout protection)
+            import logging
+            logger = logging.getLogger(__name__)
+            
             try:
                 subject = 'Your MindEase Verification Code'
                 if purpose == 'login':
@@ -357,22 +360,35 @@ def request_otp(request):
                 else:
                     message = f'Your verification code is: {otp_code}\n\nThis code will expire in 10 minutes.'
                 
-                # Use fail_silently=True to prevent hanging, then check result
-                email_sent = send_mail(
-                    subject=subject,
-                    message=message,
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[email],
-                    fail_silently=True,  # Changed to True to prevent hanging
-                )
+                # Log email configuration (without password)
+                logger.info(f"Attempting to send OTP email to {email} from {settings.DEFAULT_FROM_EMAIL}")
+                logger.info(f"Email host: {settings.EMAIL_HOST}:{settings.EMAIL_PORT}, TLS: {settings.EMAIL_USE_TLS}")
                 
-                if not email_sent:
-                    # Email failed to send
+                # Try sending email with explicit error handling
+                try:
+                    email_sent = send_mail(
+                        subject=subject,
+                        message=message,
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=[email],
+                        fail_silently=False,  # Changed back to False to see actual errors
+                    )
+                    logger.info(f"Email sent successfully to {email}")
+                except Exception as email_error:
+                    # Log the actual email error
+                    logger.error(f"SMTP error sending email to {email}: {str(email_error)}", exc_info=True)
+                    # Delete OTP if email fails
                     if otp_record:
                         otp_record.delete()
-                    import logging
-                    logger = logging.getLogger(__name__)
-                    logger.error(f"Failed to send OTP email to {email} - email backend returned False")
+                    return Response({
+                        'error': f'Failed to send OTP email: {str(email_error)}. Please check your email configuration.'
+                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                
+                if not email_sent:
+                    # Email failed to send (shouldn't happen with fail_silently=False, but check anyway)
+                    if otp_record:
+                        otp_record.delete()
+                    logger.error(f"Email backend returned False for {email}")
                     return Response({
                         'error': 'Failed to send OTP email. Please check your email configuration or try again later.'
                     }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -385,9 +401,7 @@ def request_otp(request):
                 # Delete OTP if email fails
                 if otp_record:
                     otp_record.delete()
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.error(f"Failed to send OTP email to {email}: {str(e)}", exc_info=True)
+                logger.error(f"Unexpected error sending OTP email to {email}: {str(e)}", exc_info=True)
                 return Response({
                     'error': f'Failed to send OTP email: {str(e)}. Please check your email configuration.'
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

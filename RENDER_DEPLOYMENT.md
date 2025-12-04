@@ -296,6 +296,29 @@ VITE_API_BASE_URL=https://your-backend-name.onrender.com/api
 2. Check `ALLOWED_HOSTS` includes `*.onrender.com`
 3. Restart backend service after changing variables
 
+### 404 Errors on Direct Route Access (e.g., `/admin`, `/users`):
+
+This is a common SPA routing issue. When you directly navigate to routes like `/admin` or refresh the page, Render tries to find a file at that path. The `_redirects` file should handle this, but if it's not working:
+
+1. **Verify `_redirects` file exists:**
+   - Check that `public/_redirects` exists with content: `/*    /index.html   200`
+   - After build, verify `dist/_redirects` exists
+
+2. **Check Render Static Site settings:**
+   - Go to your frontend service → Settings
+   - Ensure "Publish Directory" is set to `dist`
+   - The `_redirects` file should be in the root of `dist/`
+
+3. **Redeploy after changes:**
+   - After updating `_redirects`, commit and push
+   - Render will rebuild and redeploy
+   - The redirects should work after redeploy
+
+4. **Alternative: Use `render.yaml` (if needed):**
+   If `_redirects` still doesn't work, you can configure redirects in Render dashboard:
+   - Go to Static Site → Settings → Redirects
+   - Add: `/*` → `/index.html` (200)
+
 ### Static Files Not Loading:
 
 1. Ensure `collectstatic` runs in build command

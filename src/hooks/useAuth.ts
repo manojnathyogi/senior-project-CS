@@ -42,9 +42,17 @@ export const useAuth = () => {
   };
 
   const signOut = async () => {
-    await api.logout();
+    try {
+      await api.logout();
+    } catch (error) {
+      // Ignore logout errors
+    }
     setUser(null);
-    window.location.href = "/login";
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    // Use window.location to ensure proper navigation even if redirects aren't configured
+    // The redirects file should handle this, but this ensures it works
+    window.location.href = window.location.origin + "/login";
   };
 
   return {

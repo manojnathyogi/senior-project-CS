@@ -24,6 +24,42 @@
 
   <body>
     <div id="root"></div>
+    <!-- SPA Routing Fix: Handle direct navigation to routes -->
+    <script>
+      // If we're on a valid route but got a 404 from server, redirect to root first
+      // This ensures React Router can handle the routing client-side
+      (function() {
+        const path = window.location.pathname;
+        const validRoutes = ['/login', '/signup', '/admin', '/counselor-dashboard', '/counselor-login', 
+                           '/campus', '/wellness', '/peers', '/profile', '/settings'];
+        
+        // Check if we're on a valid route (not root)
+        if (path !== '/' && validRoutes.includes(path)) {
+          // Check if the page content suggests a 404 (server returned 404 HTML)
+          // If root element is empty or body only has "Not Found", redirect to root
+          const check404 = setInterval(function() {
+            const root = document.getElementById('root');
+            const bodyText = document.body.innerText || document.body.textContent || '';
+            
+            // If root is empty and body shows "Not Found", redirect to root
+            if ((!root || root.innerHTML.trim() === '') && bodyText.includes('Not Found')) {
+              clearInterval(check404);
+              window.location.href = '/';
+            }
+            
+            // If React has loaded (root has content), stop checking
+            if (root && root.innerHTML.trim() !== '') {
+              clearInterval(check404);
+            }
+          }, 100);
+          
+          // Stop checking after 2 seconds
+          setTimeout(function() {
+            clearInterval(check404);
+          }, 2000);
+        }
+      })();
+    </script>
     <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
     <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
     <script type="module" src="/src/main.tsx"></script>

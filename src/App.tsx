@@ -45,6 +45,7 @@ const ProtectedRoute = ({ children, requiredRole }: { children: React.ReactNode;
 const App = () => {
   const { user, loading } = useAuth();
   
+  
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="light">
